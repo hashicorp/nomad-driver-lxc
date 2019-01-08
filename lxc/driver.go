@@ -3,7 +3,6 @@ package lxc
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
@@ -12,7 +11,6 @@ import (
 	"github.com/hashicorp/nomad/plugins/base"
 	"github.com/hashicorp/nomad/plugins/drivers"
 	"github.com/hashicorp/nomad/plugins/shared/hclspec"
-	"github.com/hashicorp/nomad/plugins/shared/loader"
 	pstructs "github.com/hashicorp/nomad/plugins/shared/structs"
 	"gopkg.in/lxc/go-lxc.v2"
 )
@@ -24,37 +22,6 @@ const (
 	// fingerprintPeriod is the interval at which the driver will send fingerprint responses
 	fingerprintPeriod = 30 * time.Second
 )
-
-var (
-	// PluginID is the rawexec plugin metadata registered in the plugin
-	// catalog.
-	PluginID = loader.PluginID{
-		Name:       pluginName,
-		PluginType: base.PluginTypeDriver,
-	}
-
-	// PluginConfig is the rawexec factory function registered in the
-	// plugin catalog.
-	PluginConfig = &loader.InternalPluginConfig{
-		Config:  map[string]interface{}{},
-		Factory: func(l hclog.Logger) interface{} { return NewLXCDriver(l) },
-	}
-)
-
-// PluginLoader maps pre-0.9 client driver options to post-0.9 plugin options.
-func PluginLoader(opts map[string]string) (map[string]interface{}, error) {
-	conf := map[string]interface{}{}
-	if v, err := strconv.ParseBool(opts["driver.lxc.enable"]); err == nil {
-		conf["enabled"] = v
-	}
-	if v, err := strconv.ParseBool(opts["lxc.volumes.enabled"]); err == nil {
-		conf["volumes"] = v
-	}
-	if v, ok := opts["driver.lxc.path"]; ok {
-		conf["path"] = v
-	}
-	return conf, nil
-}
 
 var (
 	// pluginInfo is the response returned for the PluginInfo RPC
