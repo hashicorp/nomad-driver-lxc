@@ -97,8 +97,9 @@ func TestLXCDriver_Start_Wait(t *testing.T) {
 
 	harness := dtestutil.NewDriverHarness(t, d)
 	task := &drivers.TaskConfig{
-		ID:   uuid.Generate(),
-		Name: "test",
+		ID:      uuid.Generate(),
+		AllocID: uuid.Generate(),
+		Name:    "test",
 		Resources: &drivers.Resources{
 			NomadResources: &structs.AllocatedTaskResources{
 				Memory: structs.AllocatedMemoryResources{
@@ -195,8 +196,9 @@ func TestLXCDriver_Start_Stop(t *testing.T) {
 
 	harness := dtestutil.NewDriverHarness(t, d)
 	task := &drivers.TaskConfig{
-		ID:   uuid.Generate(),
-		Name: "test",
+		ID:      uuid.Generate(),
+		AllocID: uuid.Generate(),
+		Name:    "test",
 		Resources: &drivers.Resources{
 			NomadResources: &structs.AllocatedTaskResources{
 				Memory: structs.AllocatedMemoryResources{
