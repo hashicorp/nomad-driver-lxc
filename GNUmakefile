@@ -60,3 +60,10 @@ changelogfmt:
 
 .PHONY: travis
 travis: check test
+
+pkg/linux_amd64/nomad-driver-lxc:
+	./scripts/build-in-docker.sh
+
+.PHONY: dev
+dev: pkg/linux_amd64/nomad-driver-lxc
+
