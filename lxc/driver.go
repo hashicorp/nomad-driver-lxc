@@ -38,14 +38,11 @@ var (
 			hclspec.NewAttr("enabled", "bool", false),
 			hclspec.NewLiteral("true"),
 		),
-		"volumes": hclspec.NewDefault(
-			hclspec.NewAttr("volumes", "bool", false),
+		"volumes_enabled": hclspec.NewDefault(
+			hclspec.NewAttr("volumes_enabled", "bool", false),
 			hclspec.NewLiteral("true"),
 		),
-		"path": hclspec.NewDefault(
-			hclspec.NewAttr("path", "string", false),
-			hclspec.NewLiteral("\"\""),
-		),
+		"lxc_path": hclspec.NewAttr("lxc_path", "string", false),
 	})
 
 	// taskConfigSpec is the hcl specification for the driver config section of
@@ -109,9 +106,9 @@ type Config struct {
 	// Enabled is set to true to enable the lxc driver
 	Enabled bool `codec:"enabled"`
 
-	AllowVolumes bool `codec:"volumes"`
+	AllowVolumes bool `codec:"volumes_enabled"`
 
-	Path string `codec:"path"`
+	LXCPath string `codec:"lxc_path"`
 }
 
 // TaskConfig is the driver configuration of a task within a job
