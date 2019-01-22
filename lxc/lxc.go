@@ -38,7 +38,7 @@ const (
 )
 
 func (d *Driver) lxcPath() string {
-	lxcPath := d.config.Path
+	lxcPath := d.config.LXCPath
 	if lxcPath == "" {
 		lxcPath = lxc.DefaultConfigPath()
 	}
