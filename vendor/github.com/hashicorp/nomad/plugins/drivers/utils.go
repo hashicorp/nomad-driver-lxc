@@ -307,6 +307,7 @@ func taskHandleFromProto(pb *proto.TaskHandle) *TaskHandle {
 		return &TaskHandle{}
 	}
 	return &TaskHandle{
+		Version:     int(pb.Version),
 		Config:      taskConfigFromProto(pb.Config),
 		State:       taskStateFromProtoMap[pb.State],
 		DriverState: pb.DriverState,
@@ -315,6 +316,7 @@ func taskHandleFromProto(pb *proto.TaskHandle) *TaskHandle {
 
 func taskHandleToProto(handle *TaskHandle) *proto.TaskHandle {
 	return &proto.TaskHandle{
+		Version:     int32(handle.Version),
 		Config:      taskConfigToProto(handle.Config),
 		State:       taskStateToProtoMap[handle.State],
 		DriverState: handle.DriverState,
@@ -452,6 +454,9 @@ func resourceUsageToProto(ru *ResourceUsage) *proto.TaskResourceUsage {
 		case "Cache":
 			memory.Cache = ru.MemoryStats.Cache
 			memory.MeasuredFields = append(memory.MeasuredFields, proto.MemoryUsage_CACHE)
+		case "Usage":
+			memory.Usage = ru.MemoryStats.Usage
+			memory.MeasuredFields = append(memory.MeasuredFields, proto.MemoryUsage_USAGE)
 		case "Max Usage":
 			memory.MaxUsage = ru.MemoryStats.MaxUsage
 			memory.MeasuredFields = append(memory.MeasuredFields, proto.MemoryUsage_MAX_USAGE)
@@ -507,6 +512,9 @@ func resourceUsageFromProto(pb *proto.TaskResourceUsage) *ResourceUsage {
 			case proto.MemoryUsage_CACHE:
 				memory.Cache = pb.Memory.Cache
 				memory.Measured = append(memory.Measured, "Cache")
+			case proto.MemoryUsage_USAGE:
+				memory.Usage = pb.Memory.Usage
+				memory.Measured = append(memory.Measured, "Usage")
 			case proto.MemoryUsage_MAX_USAGE:
 				memory.MaxUsage = pb.Memory.MaxUsage
 				memory.Measured = append(memory.Measured, "Max Usage")
