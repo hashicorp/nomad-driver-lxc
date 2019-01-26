@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hashicorp/go-hclog"
+	hclog "github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/nomad/client/stats"
 	"github.com/hashicorp/nomad/drivers/shared/eventer"
 	"github.com/hashicorp/nomad/plugins/base"
 	"github.com/hashicorp/nomad/plugins/drivers"
 	"github.com/hashicorp/nomad/plugins/shared/hclspec"
 	pstructs "github.com/hashicorp/nomad/plugins/shared/structs"
-	"gopkg.in/lxc/go-lxc.v2"
+	lxc "gopkg.in/lxc/go-lxc.v2"
 )
 
 const (
@@ -21,6 +21,10 @@ const (
 
 	// fingerprintPeriod is the interval at which the driver will send fingerprint responses
 	fingerprintPeriod = 30 * time.Second
+
+	// taskHandleVersion is the version of task handle which this driver sets
+	// and understands how to decode driver state
+	taskHandleVersion = 1
 )
 
 var (
@@ -245,6 +249,11 @@ func (d *Driver) RecoverTask(handle *drivers.TaskHandle) error {
 		return fmt.Errorf("error: handle cannot be nil")
 	}
 
+	// COMPAT(0.10): pre 0.9 upgrade path check
+	if handle.Version == 0 {
+		return d.recoverPre09Task(handle)
+	}
+
 	if _, ok := d.tasks.Get(handle.Config.ID); ok {
 		return nil
 	}
@@ -295,7 +304,7 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 	}
 
 	d.logger.Info("starting lxc task", "driver_cfg", hclog.Fmt("%+v", driverConfig))
-	handle := drivers.NewTaskHandle(pluginName)
+	handle := drivers.NewTaskHandle(taskHandleVersion)
 	handle.Config = cfg
 
 	c, err := d.initializeContainer(cfg, driverConfig)
@@ -454,13 +463,13 @@ func (d *Driver) InspectTask(taskID string) (*drivers.TaskStatus, error) {
 	return handle.TaskStatus(), nil
 }
 
-func (d *Driver) TaskStats(taskID string) (*drivers.TaskResourceUsage, error) {
+func (d *Driver) TaskStats(ctx context.Context, taskID string, interval time.Duration) (<-chan *drivers.TaskResourceUsage, error) {
 	handle, ok := d.tasks.Get(taskID)
 	if !ok {
 		return nil, drivers.ErrTaskNotFound
 	}
 
-	return handle.stats()
+	return handle.stats(ctx, interval)
 }
 
 func (d *Driver) TaskEvents(ctx context.Context) (<-chan *drivers.TaskEvent, error) {

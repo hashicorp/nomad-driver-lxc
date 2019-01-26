@@ -1,42 +1,36 @@
 .PHONY: \
 	all \
-	lint \
-	vet \
-	fmt \
+	staticcheck \
 	fmtcheck \
 	pretest \
 	test \
-	integration \
-	clean
+	integration
+
+DEP_TOOL ?= dep
 
 all: test
 
-lint:
-	@ go get -v github.com/golang/lint/golint
-	[ -z "$$(golint . | grep -v 'type name will be used as docker.DockerInfo' | grep -v 'context.Context should be the first' | tee /dev/stderr)" ]
-
-vet:
-	go vet $$(go list ./... | grep -v vendor)
-
-fmt:
-	gofmt -s -w $$(go list ./... | grep -v vendor)
+staticcheck:
+	GO111MODULE=off go get -v honnef.co/go/tools/cmd/staticcheck
+	staticcheck ./...
 
 fmtcheck:
-	[ -z "$$(gofmt -s -d $$(go list ./... | grep -v vendor) | tee /dev/stderr)" ]
+	if [ -z "$${SKIP_FMT_CHECK}" ]; then [ -z "$$(gofmt -s -d *.go ./testing | tee /dev/stderr)" ]; fi
 
 testdeps:
-	go get -u github.com/golang/dep/cmd/dep
+ifeq ($(DEP_TOOL), dep)
+	GO111MODULE=off go get -u github.com/golang/dep/cmd/dep
 	dep ensure -v
+else
+	go mod download
+endif
 
-pretest: testdeps lint vet fmtcheck
+pretest: testdeps staticcheck fmtcheck
 
 gotest:
-	go test -race $$(go list ./... | grep -v vendor)
+	go test -race ./...
 
 test: pretest gotest
 
 integration:
 	go test -tags docker_integration -run TestIntegration -v
-
-clean:
-	go clean ./...

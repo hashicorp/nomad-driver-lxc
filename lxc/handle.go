@@ -1,6 +1,7 @@
 package lxc
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -84,95 +85,114 @@ func (h *taskHandle) run() {
 	// TODO: detect if the task OOMed
 }
 
-func (h *taskHandle) stats() (*drivers.TaskResourceUsage, error) {
-	cpuStats, err := h.container.CPUStats()
-	if err != nil {
-		h.logger.Error("failed to get container cpu stats", "error", err)
-		return nil, nil
-	}
-	total, err := h.container.CPUTime()
-	if err != nil {
-		h.logger.Error("failed to get container cpu time", "error", err)
-		return nil, nil
-	}
+func (h *taskHandle) stats(ctx context.Context, interval time.Duration) (<-chan *drivers.TaskResourceUsage, error) {
+	ch := make(chan *drivers.TaskResourceUsage)
+	go h.handleStats(ctx, ch, interval)
+	return ch, nil
+}
 
-	t := time.Now()
+func (h *taskHandle) handleStats(ctx context.Context, ch chan *drivers.TaskResourceUsage, interval time.Duration) {
+	defer close(ch)
+	timer := time.NewTimer(0)
+	for {
+		select {
+		case <-ctx.Done():
+			return
 
-	// Get the cpu stats
-	system := cpuStats["system"]
-	user := cpuStats["user"]
-	cs := &drivers.CpuStats{
-		SystemMode: h.systemCpuStats.Percent(float64(system)),
-		UserMode:   h.systemCpuStats.Percent(float64(user)),
-		Percent:    h.totalCpuStats.Percent(float64(total)),
-		TotalTicks: float64(user + system),
-		Measured:   LXCMeasuredCpuStats,
-	}
-
-	// Get the Memory Stats
-	memData := map[string]uint64{
-		"rss":   0,
-		"cache": 0,
-		"swap":  0,
-	}
-	rawMemStats := h.container.CgroupItem("memory.stat")
-	for _, rawMemStat := range rawMemStats {
-		key, val, err := keysToVal(rawMemStat)
+		case <-timer.C:
+			timer.Reset(interval)
+		}
+		cpuStats, err := h.container.CPUStats()
 		if err != nil {
-			h.logger.Error("failed to get stat", "line", rawMemStat, "error", err)
-			continue
+			h.logger.Error("failed to get container cpu stats", "error", err)
+			return
 		}
-		if _, ok := memData[key]; ok {
-			memData[key] = val
-
-		}
-	}
-	ms := &drivers.MemoryStats{
-		RSS:      memData["rss"],
-		Cache:    memData["cache"],
-		Swap:     memData["swap"],
-		Measured: LXCMeasuredMemStats,
-	}
-
-	mu := h.container.CgroupItem("memory.max_usage_in_bytes")
-	for _, rawMemMaxUsage := range mu {
-		val, err := strconv.ParseUint(rawMemMaxUsage, 10, 64)
+		total, err := h.container.CPUTime()
 		if err != nil {
-			h.logger.Error("failed to get max memory usage", "error", err)
-			continue
+			h.logger.Error("failed to get container cpu time", "error", err)
+			return
 		}
-		ms.MaxUsage = val
-	}
-	ku := h.container.CgroupItem("memory.kmem.usage_in_bytes")
-	for _, rawKernelUsage := range ku {
-		val, err := strconv.ParseUint(rawKernelUsage, 10, 64)
-		if err != nil {
-			h.logger.Error("failed to get kernel memory usage", "error", err)
-			continue
+
+		t := time.Now()
+
+		// Get the cpu stats
+		system := cpuStats["system"]
+		user := cpuStats["user"]
+		cs := &drivers.CpuStats{
+			SystemMode: h.systemCpuStats.Percent(float64(system)),
+			UserMode:   h.systemCpuStats.Percent(float64(user)),
+			Percent:    h.totalCpuStats.Percent(float64(total)),
+			TotalTicks: float64(user + system),
+			Measured:   LXCMeasuredCpuStats,
 		}
-		ms.KernelUsage = val
-	}
 
-	mku := h.container.CgroupItem("memory.kmem.max_usage_in_bytes")
-	for _, rawMaxKernelUsage := range mku {
-		val, err := strconv.ParseUint(rawMaxKernelUsage, 10, 64)
-		if err != nil {
-			h.logger.Error("failed tog get max kernel memory usage", "error", err)
-			continue
+		// Get the Memory Stats
+		memData := map[string]uint64{
+			"rss":   0,
+			"cache": 0,
+			"swap":  0,
 		}
-		ms.KernelMaxUsage = val
+		rawMemStats := h.container.CgroupItem("memory.stat")
+		for _, rawMemStat := range rawMemStats {
+			key, val, err := keysToVal(rawMemStat)
+			if err != nil {
+				h.logger.Error("failed to get stat", "line", rawMemStat, "error", err)
+				continue
+			}
+			if _, ok := memData[key]; ok {
+				memData[key] = val
+
+			}
+		}
+		ms := &drivers.MemoryStats{
+			RSS:      memData["rss"],
+			Cache:    memData["cache"],
+			Swap:     memData["swap"],
+			Measured: LXCMeasuredMemStats,
+		}
+
+		mu := h.container.CgroupItem("memory.max_usage_in_bytes")
+		for _, rawMemMaxUsage := range mu {
+			val, err := strconv.ParseUint(rawMemMaxUsage, 10, 64)
+			if err != nil {
+				h.logger.Error("failed to get max memory usage", "error", err)
+				continue
+			}
+			ms.MaxUsage = val
+		}
+		ku := h.container.CgroupItem("memory.kmem.usage_in_bytes")
+		for _, rawKernelUsage := range ku {
+			val, err := strconv.ParseUint(rawKernelUsage, 10, 64)
+			if err != nil {
+				h.logger.Error("failed to get kernel memory usage", "error", err)
+				continue
+			}
+			ms.KernelUsage = val
+		}
+
+		mku := h.container.CgroupItem("memory.kmem.max_usage_in_bytes")
+		for _, rawMaxKernelUsage := range mku {
+			val, err := strconv.ParseUint(rawMaxKernelUsage, 10, 64)
+			if err != nil {
+				h.logger.Error("failed tog get max kernel memory usage", "error", err)
+				continue
+			}
+			ms.KernelMaxUsage = val
+		}
+
+		taskResUsage := drivers.TaskResourceUsage{
+			ResourceUsage: &drivers.ResourceUsage{
+				CpuStats:    cs,
+				MemoryStats: ms,
+			},
+			Timestamp: t.UTC().UnixNano(),
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case ch <- &taskResUsage:
+		}
 	}
-
-	taskResUsage := drivers.TaskResourceUsage{
-		ResourceUsage: &drivers.ResourceUsage{
-			CpuStats:    cs,
-			MemoryStats: ms,
-		},
-		Timestamp: t.UTC().UnixNano(),
-	}
-
-	return &taskResUsage, nil
-
 }
 
 func keysToVal(line string) (string, uint64, error) {

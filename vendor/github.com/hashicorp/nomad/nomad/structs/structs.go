@@ -3419,6 +3419,7 @@ func (j *Job) Stub(summary *JobSummary) *JobListStub {
 		ID:                j.ID,
 		ParentID:          j.ParentID,
 		Name:              j.Name,
+		Datacenters:       j.Datacenters,
 		Type:              j.Type,
 		Priority:          j.Priority,
 		Periodic:          j.IsPeriodic(),
@@ -3561,6 +3562,7 @@ type JobListStub struct {
 	ID                string
 	ParentID          string
 	Name              string
+	Datacenters       []string
 	Type              string
 	Priority          int
 	Periodic          bool
@@ -4017,6 +4019,9 @@ func (d *DispatchPayloadConfig) Validate() error {
 }
 
 var (
+	// These default restart policies needs to be in sync with
+	// Canonicalize in api/tasks.go
+
 	DefaultServiceJobRestartPolicy = RestartPolicy{
 		Delay:    15 * time.Second,
 		Attempts: 2,
@@ -4032,6 +4037,9 @@ var (
 )
 
 var (
+	// These default reschedule policies needs to be in sync with
+	// NewDefaultReschedulePolicy in api/tasks.go
+
 	DefaultServiceJobReschedulePolicy = ReschedulePolicy{
 		Delay:         30 * time.Second,
 		DelayFunction: "exponential",
@@ -7282,13 +7290,17 @@ func (a *Allocation) copyImpl(job bool) *Allocation {
 func (a *Allocation) TerminalStatus() bool {
 	// First check the desired state and if that isn't terminal, check client
 	// state.
+	return a.ServerTerminalStatus() || a.ClientTerminalStatus()
+}
+
+// ServerTerminalStatus returns true if the desired state of the allocation is terminal
+func (a *Allocation) ServerTerminalStatus() bool {
 	switch a.DesiredStatus {
 	case AllocDesiredStatusStop, AllocDesiredStatusEvict:
 		return true
 	default:
+		return false
 	}
-
-	return a.ClientTerminalStatus()
 }
 
 // ClientTerminalStatus returns if the client status is terminal and will no longer transition
@@ -8537,6 +8549,10 @@ func (r *RecoverableError) Error() string {
 
 func (r *RecoverableError) IsRecoverable() bool {
 	return r.Recoverable
+}
+
+func (r *RecoverableError) IsUnrecoverable() bool {
+	return !r.Recoverable
 }
 
 // Recoverable is an interface for errors to implement to indicate whether or
