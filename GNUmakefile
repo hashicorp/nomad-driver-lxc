@@ -15,11 +15,15 @@ fmt:
 	@echo "==> Fixing source code with gofmt..."
 	gofmt -s -w ./lxc
 
+.PHONY: bootstrap
+bootstrap: deps lint-deps # install all dependencies
+
 .PHONY: deps
 deps:  ## Install build and development dependencies
 	@echo "==> Updating build dependencies..."
 	go get -u github.com/kardianos/govendor
 	go get -u gotest.tools/gotestsum
+	command -v nomad || go get -u github.com/hashicorp/nomad
 
 .PHONY: lint-deps
 lint-deps: ## Install linter dependencies
@@ -62,7 +66,7 @@ changelogfmt:
 travis: check test
 
 pkg/linux_amd64/nomad-driver-lxc:
-	./scripts/build-in-docker.sh
+	./scripts/build.sh
 
 .PHONY: dev
 dev: pkg/linux_amd64/nomad-driver-lxc
