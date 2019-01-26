@@ -6,8 +6,7 @@ build_locally() {
   DEST="pkg/linux_amd64"
   NAME="nomad-driver-lxc"
 
-  DEST="./pkg/linux_amd64/nomad-driver-lxc"
-  mkdir -p pkg/linux_amd64
+  mkdir -p "${DEST}"
   echo "===> Building lxc driver binary"
   echo
   go build -o "${DEST}/${NAME}" .

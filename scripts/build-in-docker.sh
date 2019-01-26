@@ -3,7 +3,7 @@ set -o errexit
 
 DEST="pkg/linux_amd64"
 NAME="nomad-driver-lxc"
-mkdir -p pkg/linux_amd64
+mkdir -p "${DEST}"
 
 echo "===> Building lxc driver binary"
 echo

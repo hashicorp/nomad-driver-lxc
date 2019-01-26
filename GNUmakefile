@@ -1,4 +1,10 @@
+PROJECT_ROOT := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+
 default: build
+
+.PHONY: clean
+clean: ## Remove build artifacts
+	rm -rf $(PROJECT_ROOT)/pkg
 
 .PHONY: build
 build:
@@ -65,9 +71,27 @@ changelogfmt:
 .PHONY: travis
 travis: check test
 
+ALL_TARGETS += linux_amd64
+
+# Define package targets for each of the build targets we actually have on this system
+define makePackageTarget
+
+pkg/$(1).zip: pkg/$(1)/nomad-driver-lxc
+	@echo "==> Packaging for $(1)..."
+	@zip -j pkg/$(1).zip pkg/$(1)/*
+
+endef
+
+# Reify the package targets
+$(foreach t,$(ALL_TARGETS),$(eval $(call makePackageTarget,$(t))))
+
 pkg/linux_amd64/nomad-driver-lxc:
 	./scripts/build.sh
 
 .PHONY: dev
-dev: pkg/linux_amd64/nomad-driver-lxc
+dev: clean pkg/linux_amd64/nomad-driver-lxc
 
+.PHONY: release
+release: clean pkg/linux_amd64.zip
+	@echo "==> Result:"
+	@tree --dirsfirst $(PROJECT_ROOT)/pkg
