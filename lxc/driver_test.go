@@ -10,15 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/hcl2/hcl"
 	ctestutil "github.com/hashicorp/nomad/client/testutil"
 	"github.com/hashicorp/nomad/helper/testlog"
 	"github.com/hashicorp/nomad/helper/uuid"
 	"github.com/hashicorp/nomad/nomad/structs"
 	"github.com/hashicorp/nomad/plugins/drivers"
 	dtestutil "github.com/hashicorp/nomad/plugins/drivers/testutils"
-	"github.com/hashicorp/nomad/plugins/shared/hclspec"
-	"github.com/hashicorp/nomad/plugins/shared/hclutils"
 	"github.com/hashicorp/nomad/testutil"
 	"github.com/stretchr/testify/require"
 	lxc "gopkg.in/lxc/go-lxc.v2"
@@ -119,7 +116,7 @@ func TestLXCDriver_Start_Wait(t *testing.T) {
 		"template": "/usr/share/lxc/templates/lxc-busybox",
 		"volumes":  []string{"/tmp/:mnt/tmp"},
 	}
-	encodeDriverHelper(require, task, taskConfig)
+	require.NoError(task.EncodeConcreteDriverConfig(&taskConfig))
 
 	cleanup := harness.MkAllocDir(task, false)
 	defer cleanup()
@@ -217,7 +214,7 @@ func TestLXCDriver_Start_Stop(t *testing.T) {
 	taskConfig := map[string]interface{}{
 		"template": "/usr/share/lxc/templates/lxc-busybox",
 	}
-	encodeDriverHelper(require, task, taskConfig)
+	require.NoError(task.EncodeConcreteDriverConfig(&taskConfig))
 
 	cleanup := harness.MkAllocDir(task, false)
 	defer cleanup()
@@ -265,16 +262,4 @@ func requireLXC(t *testing.T) {
 	if lxc.Version() == "" {
 		t.Skip("skipping, lxc not present")
 	}
-}
-
-func encodeDriverHelper(require *require.Assertions, task *drivers.TaskConfig, taskConfig map[string]interface{}) {
-	evalCtx := &hcl.EvalContext{
-		Functions: hclutils.GetStdlibFuncs(),
-	}
-	spec, diag := hclspec.Convert(taskConfigSpec)
-	require.False(diag.HasErrors())
-	taskConfigCtyVal, diag := hclutils.ParseHclInterface(taskConfig, spec, evalCtx)
-	require.False(diag.HasErrors())
-	err := task.EncodeDriverConfig(taskConfigCtyVal)
-	require.Nil(err)
 }
