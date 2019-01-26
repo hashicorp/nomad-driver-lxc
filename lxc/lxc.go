@@ -11,7 +11,7 @@ import (
 
 	"github.com/hashicorp/nomad/plugins/drivers"
 	ldevices "github.com/opencontainers/runc/libcontainer/devices"
-	"gopkg.in/lxc/go-lxc.v2"
+	lxc "gopkg.in/lxc/go-lxc.v2"
 )
 
 var (
