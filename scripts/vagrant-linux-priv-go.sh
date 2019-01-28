@@ -3,7 +3,7 @@
 set -e
 
 function install_go() {
-	local go_version=1.11.3
+	local go_version=1.11.5
 	local download=
 
 	download="https://storage.googleapis.com/golang/go${go_version}.linux-amd64.tar.gz"
