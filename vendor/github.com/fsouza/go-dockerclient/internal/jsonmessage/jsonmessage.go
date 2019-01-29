@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Nvveen/Gotty"
 	"github.com/docker/go-units"
 	"github.com/fsouza/go-dockerclient/internal/term"
-	"github.com/ijc/Gotty"
 )
 
 // RFC3339NanoFixed is time.RFC3339Nano with nanoseconds padded using zeros to
@@ -248,7 +248,7 @@ func (jm *JSONMessage) Display(out io.Writer, termInfo termInfo) error {
 	if termInfo != nil && jm.Stream == "" && jm.Progress != nil {
 		clearLine(out, termInfo)
 		endl = "\r"
-		_, err := fmt.Fprint(out, endl)
+		_, err := fmt.Fprintf(out, endl)
 		if err != nil {
 			return err
 		}

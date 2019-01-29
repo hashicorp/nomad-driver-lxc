@@ -5,10 +5,7 @@ package process
 import (
 	"C"
 	"bytes"
-	"context"
 	"encoding/binary"
-	"os/exec"
-	"strconv"
 	"strings"
 	"unsafe"
 
@@ -18,6 +15,7 @@ import (
 	net "github.com/shirou/gopsutil/net"
 	"golang.org/x/sys/unix"
 )
+import "context"
 
 // MemoryInfoExStat is different between OSes
 type MemoryInfoExStat struct {
@@ -163,23 +161,6 @@ func (p *Process) StatusWithContext(ctx context.Context) (string, error) {
 	}
 
 	return s, nil
-}
-func (p *Process) Foreground() (bool, error) {
-	return p.ForegroundWithContext(context.Background())
-}
-
-func (p *Process) ForegroundWithContext(ctx context.Context) (bool, error) {
-	// see https://github.com/shirou/gopsutil/issues/596#issuecomment-432707831 for implementation details
-	pid := p.Pid
-	ps, err := exec.LookPath("ps")
-	if err != nil {
-		return false, err
-	}
-	out, err := invoke.CommandWithContext(ctx, ps, "-o", "stat=", "-p", strconv.Itoa(int(pid)))
-	if err != nil {
-		return false, err
-	}
-	return strings.IndexByte(string(out), '+') != -1, nil
 }
 func (p *Process) Uids() ([]int32, error) {
 	return p.UidsWithContext(context.Background())
@@ -359,20 +340,12 @@ func (p *Process) MemoryInfoExWithContext(ctx context.Context) (*MemoryInfoExSta
 	return nil, common.ErrNotImplementedError
 }
 
-func (p *Process) PageFaults() (*PageFaultsStat, error) {
-	return p.PageFaultsWithContext(context.Background())
-}
-
-func (p *Process) PageFaultsWithContext(ctx context.Context) (*PageFaultsStat, error) {
-	return nil, common.ErrNotImplementedError
-}
-
 func (p *Process) Children() ([]*Process, error) {
 	return p.ChildrenWithContext(context.Background())
 }
 
 func (p *Process) ChildrenWithContext(ctx context.Context) ([]*Process, error) {
-	pids, err := common.CallPgrepWithContext(ctx, invoke, p.Pid)
+	pids, err := common.CallPgrep(invoke, p.Pid)
 	if err != nil {
 		return nil, err
 	}

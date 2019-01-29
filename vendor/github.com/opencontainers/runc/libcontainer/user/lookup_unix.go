@@ -5,7 +5,6 @@ package user
 import (
 	"io"
 	"os"
-	"strconv"
 
 	"golang.org/x/sys/unix"
 )
@@ -116,23 +115,22 @@ func CurrentGroup() (Group, error) {
 	return LookupGid(unix.Getgid())
 }
 
-func currentUserSubIDs(fileName string) ([]SubID, error) {
+func CurrentUserSubUIDs() ([]SubID, error) {
 	u, err := CurrentUser()
 	if err != nil {
 		return nil, err
 	}
-	filter := func(entry SubID) bool {
-		return entry.Name == u.Name || entry.Name == strconv.Itoa(u.Uid)
+	return ParseSubIDFileFilter("/etc/subuid",
+		func(entry SubID) bool { return entry.Name == u.Name })
+}
+
+func CurrentGroupSubGIDs() ([]SubID, error) {
+	g, err := CurrentGroup()
+	if err != nil {
+		return nil, err
 	}
-	return ParseSubIDFileFilter(fileName, filter)
-}
-
-func CurrentUserSubUIDs() ([]SubID, error) {
-	return currentUserSubIDs("/etc/subuid")
-}
-
-func CurrentUserSubGIDs() ([]SubID, error) {
-	return currentUserSubIDs("/etc/subgid")
+	return ParseSubIDFileFilter("/etc/subgid",
+		func(entry SubID) bool { return entry.Name == g.Name })
 }
 
 func CurrentProcessUIDMap() ([]IDMap, error) {

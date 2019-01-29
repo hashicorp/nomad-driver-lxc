@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/hashicorp/vault/helper/consts"
-
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 )
 
@@ -126,7 +124,7 @@ func (r *Request) toRetryableHTTP() (*retryablehttp.Request, error) {
 	}
 
 	if len(r.ClientToken) != 0 {
-		req.Header.Set(consts.AuthHeaderName, r.ClientToken)
+		req.Header.Set("X-Vault-Token", r.ClientToken)
 	}
 
 	if len(r.WrapTTL) != 0 {

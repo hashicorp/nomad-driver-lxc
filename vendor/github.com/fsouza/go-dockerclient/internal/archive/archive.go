@@ -10,7 +10,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,6 +18,7 @@ import (
 	"github.com/docker/docker/pkg/idtools"
 	"github.com/docker/docker/pkg/pools"
 	"github.com/docker/docker/pkg/system"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -117,13 +117,13 @@ func TarWithOptions(srcPath string, options *TarOptions) (io.ReadCloser, error) 
 		defer func() {
 			// Make sure to check the error on Close.
 			if err := ta.TarWriter.Close(); err != nil {
-				log.Printf("Can't close tar writer: %s", err)
+				logrus.Errorf("Can't close tar writer: %s", err)
 			}
 			if err := compressWriter.Close(); err != nil {
-				log.Printf("Can't close compress writer: %s", err)
+				logrus.Errorf("Can't close compress writer: %s", err)
 			}
 			if err := pipeWriter.Close(); err != nil {
-				log.Printf("Can't close pipe writer: %s", err)
+				logrus.Errorf("Can't close pipe writer: %s", err)
 			}
 		}()
 
@@ -146,7 +146,7 @@ func TarWithOptions(srcPath string, options *TarOptions) (io.ReadCloser, error) 
 			// directory. So, we must split the source path and use the
 			// basename as the include.
 			if len(options.IncludeFiles) > 0 {
-				log.Print("Tar: Can't archive a file with includes")
+				logrus.Warn("Tar: Can't archive a file with includes")
 			}
 
 			dir, base := SplitPathDirEntry(srcPath)
@@ -166,7 +166,7 @@ func TarWithOptions(srcPath string, options *TarOptions) (io.ReadCloser, error) 
 			walkRoot := getWalkRoot(srcPath, include)
 			filepath.Walk(walkRoot, func(filePath string, f os.FileInfo, err error) error {
 				if err != nil {
-					log.Printf("Tar: Can't stat file %s to tar: %s", srcPath, err)
+					logrus.Errorf("Tar: Can't stat file %s to tar: %s", srcPath, err)
 					return nil
 				}
 
@@ -191,7 +191,7 @@ func TarWithOptions(srcPath string, options *TarOptions) (io.ReadCloser, error) 
 				if include != relFilePath {
 					skip, err = pm.Matches(relFilePath)
 					if err != nil {
-						log.Printf("Error matching %s: %v", relFilePath, err)
+						logrus.Errorf("Error matching %s: %v", relFilePath, err)
 						return err
 					}
 				}
@@ -247,7 +247,7 @@ func TarWithOptions(srcPath string, options *TarOptions) (io.ReadCloser, error) 
 				}
 
 				if err := ta.addTarFile(filePath, relFilePath); err != nil {
-					log.Printf("Can't add file %s to tar: %s", filePath, err)
+					logrus.Errorf("Can't add file %s to tar: %s", filePath, err)
 					// if pipe is broken, stop writing tar stream to it
 					if err == io.ErrClosedPipe {
 						return err
@@ -276,10 +276,8 @@ func CompressStream(dest io.Writer, compression Compression) (io.WriteCloser, er
 	case Bzip2, Xz:
 		// archive/bzip2 does not support writing, and there is no xz support at all
 		// However, this is not a problem as docker only currently generates gzipped tars
-		//lint:ignore ST1005 this is vendored/copied code
 		return nil, fmt.Errorf("Unsupported compression format %s", (&compression).Extension())
 	default:
-		//lint:ignore ST1005 this is vendored/copied code
 		return nil, fmt.Errorf("Unsupported compression format %s", (&compression).Extension())
 	}
 }
@@ -439,9 +437,7 @@ func (ta *tarAppender) addTarFile(path, name string) error {
 func ReadSecurityXattrToTarHeader(path string, hdr *tar.Header) error {
 	capability, _ := system.Lgetxattr(path, "security.capability")
 	if capability != nil {
-		//lint:ignore SA1019 this is vendored/copied code
 		hdr.Xattrs = make(map[string]string)
-		//lint:ignore SA1019 this is vendored/copied code
 		hdr.Xattrs["security.capability"] = string(capability)
 	}
 	return nil
