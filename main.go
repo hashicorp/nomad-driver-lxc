@@ -12,7 +12,7 @@ func main() {
 	plugins.Serve(factory)
 }
 
-// factory returns a new instance of the Nvidia GPU plugin
+// factory returns a new instance of the LXC driver plugin
 func factory(log log.Logger) interface{} {
 	return lxc.NewLXCDriver(log)
 }
