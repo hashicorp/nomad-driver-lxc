@@ -52,7 +52,7 @@ type APIMount struct {
 	Driver      string `json:"Driver,omitempty" yaml:"Driver,omitempty" toml:"Driver,omitempty"`
 	Mode        string `json:"Mode,omitempty" yaml:"Mode,omitempty" toml:"Mode,omitempty"`
 	RW          bool   `json:"RW,omitempty" yaml:"RW,omitempty" toml:"RW,omitempty"`
-	Propagation string `json:"Propagation,omitempty" yaml:"Propagation,omitempty" toml:"Propagation,omitempty"`
+	Propogation string `json:"Propogation,omitempty" yaml:"Propogation,omitempty" toml:"Propogation,omitempty"`
 }
 
 // APIContainers represents each container in the list returned by
@@ -627,7 +627,7 @@ func (c *Client) CreateContainer(opts CreateContainerOptions) (*Container, error
 	)
 
 	if e, ok := err.(*Error); ok {
-		if e.Status == http.StatusNotFound && strings.Contains(e.Message, "No such image") {
+		if e.Status == http.StatusNotFound {
 			return nil, ErrNoSuchImage
 		}
 		if e.Status == http.StatusConflict {
@@ -1103,8 +1103,13 @@ func (c *Client) Stats(opts StatsOptions) (retErr error) {
 	defer func() {
 		close(opts.Stats)
 
-		if err := <-errC; err != nil && retErr == nil {
-			retErr = err
+		select {
+		case err := <-errC:
+			if err != nil && retErr == nil {
+				retErr = err
+			}
+		default:
+			// No errors
 		}
 
 		if err := readCloser.Close(); err != nil && retErr == nil {
@@ -1114,7 +1119,6 @@ func (c *Client) Stats(opts StatsOptions) (retErr error) {
 
 	reqSent := make(chan struct{})
 	go func() {
-		defer close(errC)
 		err := c.stream("GET", fmt.Sprintf("/containers/%s/stats?stream=%v", opts.ID, opts.Stream), streamOptions{
 			rawJSONStream:     true,
 			useJSONDecoder:    true,
@@ -1136,6 +1140,7 @@ func (c *Client) Stats(opts StatsOptions) (retErr error) {
 			err = closeErr
 		}
 		errC <- err
+		close(errC)
 	}()
 
 	quit := make(chan struct{})

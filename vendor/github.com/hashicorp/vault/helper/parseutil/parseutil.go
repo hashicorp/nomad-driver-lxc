@@ -106,10 +106,6 @@ func ParseBool(in interface{}) (bool, error) {
 }
 
 func ParseCommaStringSlice(in interface{}) ([]string, error) {
-	rawString, ok := in.(string)
-	if ok && rawString == "" {
-		return []string{}, nil
-	}
 	var result []string
 	config := &mapstructure.DecoderConfig{
 		Result:           &result,

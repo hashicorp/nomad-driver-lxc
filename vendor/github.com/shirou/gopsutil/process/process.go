@@ -3,7 +3,6 @@ package process
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"runtime"
 	"time"
 
@@ -12,10 +11,11 @@ import (
 	"github.com/shirou/gopsutil/mem"
 )
 
-var (
-	invoke          common.Invoker = common.Invoke{}
-	ErrorNoChildren                = errors.New("process does not have children")
-)
+var invoke common.Invoker
+
+func init() {
+	invoke = common.Invoke{}
+}
 
 type Process struct {
 	Pid            int32 `json:"pid"`
@@ -43,7 +43,6 @@ type OpenFilesStat struct {
 type MemoryInfoStat struct {
 	RSS    uint64 `json:"rss"`    // bytes
 	VMS    uint64 `json:"vms"`    // bytes
-	HWM    uint64 `json:"hwm"`    // bytes
 	Data   uint64 `json:"data"`   // bytes
 	Stack  uint64 `json:"stack"`  // bytes
 	Locked uint64 `json:"locked"` // bytes
@@ -75,13 +74,6 @@ type IOCountersStat struct {
 type NumCtxSwitchesStat struct {
 	Voluntary   int64 `json:"voluntary"`
 	Involuntary int64 `json:"involuntary"`
-}
-
-type PageFaultsStat struct {
-	MinorFaults      uint64 `json:"minorFaults"`
-	MajorFaults      uint64 `json:"majorFaults"`
-	ChildMinorFaults uint64 `json:"childMinorFaults"`
-	ChildMajorFaults uint64 `json:"childMajorFaults"`
 }
 
 // Resource limit constants are from /usr/include/x86_64-linux-gnu/bits/resource.h
@@ -152,19 +144,6 @@ func PidExistsWithContext(ctx context.Context, pid int32) (bool, error) {
 	}
 
 	return false, err
-}
-
-// Background returns true if the process is in background, false otherwise.
-func (p *Process) Background() (bool, error) {
-	return p.BackgroundWithContext(context.Background())
-}
-
-func (p *Process) BackgroundWithContext(ctx context.Context) (bool, error) {
-	fg, err := p.ForegroundWithContext(ctx)
-	if err != nil {
-		return false, err
-	}
-	return !fg, err
 }
 
 // If interval is 0, return difference from last call(non-blocking).

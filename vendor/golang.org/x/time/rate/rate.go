@@ -6,11 +6,12 @@
 package rate
 
 import (
-	"context"
 	"fmt"
 	"math"
 	"sync"
 	"time"
+
+	"golang.org/x/net/context"
 )
 
 // Limit defines the maximum frequency of some events.
@@ -198,10 +199,9 @@ func (lim *Limiter) Reserve() *Reservation {
 // The Limiter takes this Reservation into account when allowing future events.
 // ReserveN returns false if n exceeds the Limiter's burst size.
 // Usage example:
-//   r := lim.ReserveN(time.Now(), 1)
-//   if !r.OK() {
+//   r, ok := lim.ReserveN(time.Now(), 1)
+//   if !ok {
 //     // Not allowed to act! Did you remember to set lim.burst to be > 0 ?
-//     return
 //   }
 //   time.Sleep(r.Delay())
 //   Act()
@@ -221,9 +221,8 @@ func (lim *Limiter) Wait(ctx context.Context) (err error) {
 // WaitN blocks until lim permits n events to happen.
 // It returns an error if n exceeds the Limiter's burst size, the Context is
 // canceled, or the expected wait time exceeds the Context's Deadline.
-// The burst limit is ignored if the rate limit is Inf.
 func (lim *Limiter) WaitN(ctx context.Context, n int) (err error) {
-	if n > lim.burst && lim.limit != Inf {
+	if n > lim.burst {
 		return fmt.Errorf("rate: Wait(n=%d) exceeds limiter's burst %d", n, lim.burst)
 	}
 	// Check if ctx is already cancelled
@@ -243,12 +242,8 @@ func (lim *Limiter) WaitN(ctx context.Context, n int) (err error) {
 	if !r.ok {
 		return fmt.Errorf("rate: Wait(n=%d) would exceed context deadline", n)
 	}
-	// Wait if necessary
-	delay := r.DelayFrom(now)
-	if delay == 0 {
-		return nil
-	}
-	t := time.NewTimer(delay)
+	// Wait
+	t := time.NewTimer(r.DelayFrom(now))
 	defer t.Stop()
 	select {
 	case <-t.C:
@@ -286,9 +281,9 @@ func (lim *Limiter) SetLimitAt(now time.Time, newLimit Limit) {
 // reserveN returns Reservation, not *Reservation, to avoid allocation in AllowN and WaitN.
 func (lim *Limiter) reserveN(now time.Time, n int, maxFutureReserve time.Duration) Reservation {
 	lim.mu.Lock()
+	defer lim.mu.Unlock()
 
 	if lim.limit == Inf {
-		lim.mu.Unlock()
 		return Reservation{
 			ok:        true,
 			lim:       lim,
@@ -331,7 +326,6 @@ func (lim *Limiter) reserveN(now time.Time, n int, maxFutureReserve time.Duratio
 		lim.last = last
 	}
 
-	lim.mu.Unlock()
 	return r
 }
 

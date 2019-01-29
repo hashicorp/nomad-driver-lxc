@@ -24,7 +24,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"math"
 	"net"
 	"net/http"
 	"strconv"
@@ -242,7 +241,7 @@ func (d *decodeState) decodeHeader(frame *http2.MetaHeadersFrame) error {
 	// frame.Truncated is set to true when framer detects that the current header
 	// list size hits MaxHeaderListSize limit.
 	if frame.Truncated {
-		return status.Error(codes.Internal, "peer header list size exceeded limit")
+		return streamErrorf(codes.Internal, "peer header list size exceeded limit")
 	}
 	for _, hf := range frame.Fields {
 		if err := d.processHeaderField(hf); err != nil {
@@ -262,7 +261,7 @@ func (d *decodeState) decodeHeader(frame *http2.MetaHeadersFrame) error {
 	// If grpc status doesn't exist and http status doesn't exist,
 	// then it's a malformed header.
 	if d.httpStatus == nil {
-		return status.Error(codes.Internal, "malformed header: doesn't contain status(gRPC or HTTP)")
+		return streamErrorf(codes.Internal, "malformed header: doesn't contain status(gRPC or HTTP)")
 	}
 
 	if *(d.httpStatus) != http.StatusOK {
@@ -270,7 +269,7 @@ func (d *decodeState) decodeHeader(frame *http2.MetaHeadersFrame) error {
 		if !ok {
 			code = codes.Unknown
 		}
-		return status.Error(code, http.StatusText(*(d.httpStatus)))
+		return streamErrorf(code, http.StatusText(*(d.httpStatus)))
 	}
 
 	// gRPC status doesn't exist and http status is OK.
@@ -296,7 +295,7 @@ func (d *decodeState) processHeaderField(f hpack.HeaderField) error {
 	case "content-type":
 		contentSubtype, validContentType := contentSubtype(f.Value)
 		if !validContentType {
-			return status.Errorf(codes.Internal, "transport: received the unexpected content-type %q", f.Value)
+			return streamErrorf(codes.Internal, "transport: received the unexpected content-type %q", f.Value)
 		}
 		d.contentSubtype = contentSubtype
 		// TODO: do we want to propagate the whole content-type in the metadata,
@@ -309,7 +308,7 @@ func (d *decodeState) processHeaderField(f hpack.HeaderField) error {
 	case "grpc-status":
 		code, err := strconv.Atoi(f.Value)
 		if err != nil {
-			return status.Errorf(codes.Internal, "transport: malformed grpc-status: %v", err)
+			return streamErrorf(codes.Internal, "transport: malformed grpc-status: %v", err)
 		}
 		d.rawStatusCode = &code
 	case "grpc-message":
@@ -317,38 +316,38 @@ func (d *decodeState) processHeaderField(f hpack.HeaderField) error {
 	case "grpc-status-details-bin":
 		v, err := decodeBinHeader(f.Value)
 		if err != nil {
-			return status.Errorf(codes.Internal, "transport: malformed grpc-status-details-bin: %v", err)
+			return streamErrorf(codes.Internal, "transport: malformed grpc-status-details-bin: %v", err)
 		}
 		s := &spb.Status{}
 		if err := proto.Unmarshal(v, s); err != nil {
-			return status.Errorf(codes.Internal, "transport: malformed grpc-status-details-bin: %v", err)
+			return streamErrorf(codes.Internal, "transport: malformed grpc-status-details-bin: %v", err)
 		}
 		d.statusGen = status.FromProto(s)
 	case "grpc-timeout":
 		d.timeoutSet = true
 		var err error
 		if d.timeout, err = decodeTimeout(f.Value); err != nil {
-			return status.Errorf(codes.Internal, "transport: malformed time-out: %v", err)
+			return streamErrorf(codes.Internal, "transport: malformed time-out: %v", err)
 		}
 	case ":path":
 		d.method = f.Value
 	case ":status":
 		code, err := strconv.Atoi(f.Value)
 		if err != nil {
-			return status.Errorf(codes.Internal, "transport: malformed http-status: %v", err)
+			return streamErrorf(codes.Internal, "transport: malformed http-status: %v", err)
 		}
 		d.httpStatus = &code
 	case "grpc-tags-bin":
 		v, err := decodeBinHeader(f.Value)
 		if err != nil {
-			return status.Errorf(codes.Internal, "transport: malformed grpc-tags-bin: %v", err)
+			return streamErrorf(codes.Internal, "transport: malformed grpc-tags-bin: %v", err)
 		}
 		d.statsTags = v
 		d.addMetadata(f.Name, string(v))
 	case "grpc-trace-bin":
 		v, err := decodeBinHeader(f.Value)
 		if err != nil {
-			return status.Errorf(codes.Internal, "transport: malformed grpc-trace-bin: %v", err)
+			return streamErrorf(codes.Internal, "transport: malformed grpc-trace-bin: %v", err)
 		}
 		d.statsTrace = v
 		d.addMetadata(f.Name, string(v))
@@ -436,10 +435,6 @@ func decodeTimeout(s string) (time.Duration, error) {
 	if size < 2 {
 		return 0, fmt.Errorf("transport: timeout string is too short: %q", s)
 	}
-	if size > 9 {
-		// Spec allows for 8 digits plus the unit.
-		return 0, fmt.Errorf("transport: timeout string is too long: %q", s)
-	}
 	unit := timeoutUnit(s[size-1])
 	d, ok := timeoutUnitToDuration(unit)
 	if !ok {
@@ -448,11 +443,6 @@ func decodeTimeout(s string) (time.Duration, error) {
 	t, err := strconv.ParseInt(s[:size-1], 10, 64)
 	if err != nil {
 		return 0, err
-	}
-	const maxHours = math.MaxInt64 / int64(time.Hour)
-	if d == time.Hour && t > maxHours {
-		// This timeout would overflow math.MaxInt64; clamp it.
-		return time.Duration(math.MaxInt64), nil
 	}
 	return d * time.Duration(t), nil
 }

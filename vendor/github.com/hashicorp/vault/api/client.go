@@ -16,9 +16,9 @@ import (
 	"unicode"
 
 	"github.com/hashicorp/errwrap"
-	cleanhttp "github.com/hashicorp/go-cleanhttp"
+	"github.com/hashicorp/go-cleanhttp"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
-	rootcerts "github.com/hashicorp/go-rootcerts"
+	"github.com/hashicorp/go-rootcerts"
 	"github.com/hashicorp/vault/helper/consts"
 	"github.com/hashicorp/vault/helper/parseutil"
 	"golang.org/x/net/http2"
@@ -121,7 +121,7 @@ type TLSConfig struct {
 func DefaultConfig() *Config {
 	config := &Config{
 		Address:    "https://127.0.0.1:8200",
-		HttpClient: cleanhttp.DefaultPooledClient(),
+		HttpClient: cleanhttp.DefaultClient(),
 	}
 	config.HttpClient.Timeout = time.Second * 60
 
@@ -546,10 +546,6 @@ func (c *Client) SetBackoff(backoff retryablehttp.Backoff) {
 // underlying http.Client is used; modifying the client from more than one
 // goroutine at once may not be safe, so modify the client as needed and then
 // clone.
-//
-// Also, only the client's config is currently copied; this means items not in
-// the api.Config struct, such as policy override and wrapping function
-// behavior, must currently then be set as desired on the new client.
 func (c *Client) Clone() (*Client, error) {
 	c.modifyLock.RLock()
 	c.config.modifyLock.RLock()

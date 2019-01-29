@@ -15,7 +15,7 @@ var (
 	procGetDiskFreeSpaceExW     = common.Modkernel32.NewProc("GetDiskFreeSpaceExW")
 	procGetLogicalDriveStringsW = common.Modkernel32.NewProc("GetLogicalDriveStringsW")
 	procGetDriveType            = common.Modkernel32.NewProc("GetDriveTypeW")
-	procGetVolumeInformation    = common.Modkernel32.NewProc("GetVolumeInformationW")
+	provGetVolumeInformation    = common.Modkernel32.NewProc("GetVolumeInformationW")
 )
 
 var (
@@ -83,6 +83,9 @@ func PartitionsWithContext(ctx context.Context, all bool) ([]PartitionStat, erro
 	for _, v := range lpBuffer {
 		if v >= 65 && v <= 90 {
 			path := string(v) + ":"
+			if path == "A:" || path == "B:" { // skip floppy drives
+				continue
+			}
 			typepath, _ := windows.UTF16PtrFromString(path)
 			typeret, _, _ := procGetDriveType.Call(uintptr(unsafe.Pointer(typepath)))
 			if typeret == 0 {
@@ -97,7 +100,7 @@ func PartitionsWithContext(ctx context.Context, all bool) ([]PartitionStat, erro
 				lpFileSystemFlags := int64(0)
 				lpFileSystemNameBuffer := make([]byte, 256)
 				volpath, _ := windows.UTF16PtrFromString(string(v) + ":/")
-				driveret, _, err := procGetVolumeInformation.Call(
+				driveret, _, err := provGetVolumeInformation.Call(
 					uintptr(unsafe.Pointer(volpath)),
 					uintptr(unsafe.Pointer(&lpVolumeNameBuffer[0])),
 					uintptr(len(lpVolumeNameBuffer)),

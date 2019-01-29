@@ -171,7 +171,7 @@ func (mb mergedBodies) mergedContent(schema *BodySchema, partial bool) (*BodyCon
 		}
 
 		if thisLeftovers != nil {
-			mergedLeftovers = append(mergedLeftovers, thisLeftovers)
+			mergedLeftovers = append(mergedLeftovers)
 		}
 		if len(thisDiags) != 0 {
 			diags = append(diags, thisDiags...)

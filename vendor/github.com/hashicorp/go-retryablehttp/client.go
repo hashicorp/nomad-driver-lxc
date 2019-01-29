@@ -183,24 +183,18 @@ func NewRequest(method, url string, rawBody interface{}) (*Request, error) {
 	return &Request{body, httpReq}, nil
 }
 
-// Logger interface allows to use other loggers than
-// standard log.Logger.
-type Logger interface {
-	Printf(string, ...interface{})
-}
-
 // RequestLogHook allows a function to run before each retry. The HTTP
 // request which will be made, and the retry number (0 for the initial
 // request) are available to users. The internal logger is exposed to
 // consumers.
-type RequestLogHook func(Logger, *http.Request, int)
+type RequestLogHook func(*log.Logger, *http.Request, int)
 
 // ResponseLogHook is like RequestLogHook, but allows running a function
 // on each HTTP response. This function will be invoked at the end of
 // every HTTP request executed, regardless of whether a subsequent retry
 // needs to be performed or not. If the response body is read or closed
 // from this method, this will affect the response returned from Do().
-type ResponseLogHook func(Logger, *http.Response)
+type ResponseLogHook func(*log.Logger, *http.Response)
 
 // CheckRetry specifies a policy for handling retries. It is called
 // following each request with the response and error values returned by
@@ -227,7 +221,7 @@ type ErrorHandler func(resp *http.Response, err error, numTries int) (*http.Resp
 // like automatic retries to tolerate minor outages.
 type Client struct {
 	HTTPClient *http.Client // Internal HTTP client.
-	Logger     Logger       // Customer logger instance.
+	Logger     *log.Logger  // Customer logger instance.
 
 	RetryWaitMin time.Duration // Minimum time to wait
 	RetryWaitMax time.Duration // Maximum time to wait
