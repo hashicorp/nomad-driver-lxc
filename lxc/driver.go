@@ -263,11 +263,6 @@ func (d *Driver) RecoverTask(handle *drivers.TaskHandle) error {
 		return fmt.Errorf("failed to decode task state from handle: %v", err)
 	}
 
-	var driverConfig TaskConfig
-	if err := taskState.TaskConfig.DecodeDriverConfig(&driverConfig); err != nil {
-		return fmt.Errorf("failed to decode driver config: %v", err)
-	}
-
 	c, err := lxc.NewContainer(taskState.ContainerName, d.lxcPath())
 	if err != nil {
 		return fmt.Errorf("failed to create container ref: %v", err)
@@ -281,6 +276,7 @@ func (d *Driver) RecoverTask(handle *drivers.TaskHandle) error {
 		procState:  drivers.TaskStateRunning,
 		startedAt:  taskState.StartedAt,
 		exitResult: &drivers.ExitResult{},
+		logger:     d.logger,
 
 		totalCpuStats:  stats.NewCpuStats(),
 		userCpuStats:   stats.NewCpuStats(),
