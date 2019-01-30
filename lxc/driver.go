@@ -281,6 +281,7 @@ func (d *Driver) RecoverTask(handle *drivers.TaskHandle) error {
 		procState:  drivers.TaskStateRunning,
 		startedAt:  taskState.StartedAt,
 		exitResult: &drivers.ExitResult{},
+		logger:     d.logger,
 
 		totalCpuStats:  stats.NewCpuStats(),
 		userCpuStats:   stats.NewCpuStats(),

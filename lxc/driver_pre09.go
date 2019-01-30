@@ -27,6 +27,7 @@ func (d *Driver) recoverPre09Task(h *drivers.TaskHandle) error {
 		taskConfig: h.Config,
 		procState:  drivers.TaskStateRunning,
 		exitResult: &drivers.ExitResult{},
+		logger:     d.logger,
 
 		totalCpuStats:  stats.NewCpuStats(),
 		userCpuStats:   stats.NewCpuStats(),
