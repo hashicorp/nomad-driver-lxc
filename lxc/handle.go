@@ -209,9 +209,13 @@ func keysToVal(line string) (string, uint64, error) {
 // before killing the container with SIGKILL.
 func (h *taskHandle) shutdown(timeout time.Duration) error {
 	err := h.container.Shutdown(timeout)
-	if err == nil {
+	if err == nil || strings.Contains(err.Error(), "not running") {
 		return nil
 	}
 
-	return h.container.Stop()
+	err = h.container.Stop()
+	if err == nil || strings.Contains(err.Error(), "not running") {
+		return nil
+	}
+	return err
 }
