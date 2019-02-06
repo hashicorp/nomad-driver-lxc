@@ -14,7 +14,7 @@ Requirements
 Building The Driver
 ---------------------
 
-Clone repository to: `$GOPATH/src/github.com/hashicorp/nomad-driver-lxc
+Clone repository to: `$GOPATH/src/github.com/hashicorp/nomad-driver-lxc`
 
 ```sh
 $ mkdir -p $GOPATH/src/github.com/hashicorp; cd $GOPATH/src/github.com/
