@@ -17,7 +17,7 @@ Building The Driver
 Clone repository to: `$GOPATH/src/github.com/hashicorp/nomad-driver-lxc
 
 ```sh
-$ mkdir -p $GOPATH/src/github.com/hashicorp; cd $GOPATH/src/github.com/
+$ mkdir -p $GOPATH/src/github.com/hashicorp; cd $GOPATH/src/github.com/hashicorp
 $ git clone git@github.com:hashicorp/nomad-driver-lxc
 ```
 
