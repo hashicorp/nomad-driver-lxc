@@ -31,7 +31,8 @@ $ make build
 Using the driver
 ----------------------
 
-_TODO: Fill this_
+- [Documentation](https://www.nomadproject.io/docs/drivers/external/lxc.html)
+- [Guide](https://www.nomadproject.io/guides/external/lxc.html)
 
 Developing the Provider
 ---------------------------
