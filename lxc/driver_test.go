@@ -91,6 +91,7 @@ func TestLXCDriver_Start_Wait(t *testing.T) {
 	d := NewLXCDriver(testlog.HCLogger(t)).(*Driver)
 	d.config.Enabled = true
 	d.config.AllowVolumes = true
+	d.config.NetworkMode = "host"
 
 	harness := dtestutil.NewDriverHarness(t, d)
 	task := &drivers.TaskConfig{
@@ -190,6 +191,7 @@ func TestLXCDriver_Start_Stop(t *testing.T) {
 	d := NewLXCDriver(testlog.HCLogger(t)).(*Driver)
 	d.config.Enabled = true
 	d.config.AllowVolumes = true
+	d.config.NetworkMode = "host"
 
 	harness := dtestutil.NewDriverHarness(t, d)
 	task := &drivers.TaskConfig{
