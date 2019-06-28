@@ -47,6 +47,10 @@ var (
 			hclspec.NewLiteral("true"),
 		),
 		"lxc_path": hclspec.NewAttr("lxc_path", "string", false),
+		"network_mode": hclspec.NewDefault(
+			hclspec.NewAttr("network_mode", "string", false),
+			hclspec.NewLiteral("\"bridge\""),
+		),
 	})
 
 	// taskConfigSpec is the hcl specification for the driver config section of
@@ -67,6 +71,7 @@ var (
 		"log_level":      hclspec.NewAttr("log_level", "string", false),
 		"verbosity":      hclspec.NewAttr("verbosity", "string", false),
 		"volumes":        hclspec.NewAttr("volumes", "list(string)", false),
+		"network_mode":   hclspec.NewAttr("network_mode", "string", false),
 	})
 
 	// capabilities is returned by the Capabilities RPC and indicates what
@@ -113,6 +118,9 @@ type Config struct {
 	AllowVolumes bool `codec:"volumes_enabled"`
 
 	LXCPath string `codec:"lxc_path"`
+
+	// default networking mode if not specified in task config
+	NetworkMode string `codec:"network_mode"`
 }
 
 // TaskConfig is the driver configuration of a task within a job
@@ -132,6 +140,7 @@ type TaskConfig struct {
 	LogLevel             string   `codec:"log_level"`
 	Verbosity            string   `codec:"verbosity"`
 	Volumes              []string `codec:"volumes"`
+	Network_mode         string   `codec:"network_mode"`
 }
 
 // TaskState is the state which is encoded in the handle returned in
@@ -319,7 +328,7 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 		}
 	}
 
-	if err := d.configureContainerNetwork(c); err != nil {
+	if err := d.configureContainerNetwork(c, driverConfig); err != nil {
 		cleanup()
 		return nil, nil, err
 	}
@@ -445,7 +454,7 @@ func (d *Driver) DestroyTask(taskID string, force bool) error {
 			handle.logger.Error("failed to destroy executor", "err", err)
 		}
 	}
-
+	
 	d.tasks.Delete(taskID)
 	return nil
 }
