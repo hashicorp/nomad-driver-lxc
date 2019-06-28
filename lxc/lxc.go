@@ -75,7 +75,7 @@ func (d *Driver) initializeContainer(cfg *drivers.TaskConfig, taskConfig TaskCon
 func (d *Driver) configureContainerNetwork(c *lxc.Container, taskConfig TaskConfig) error {
 
 	// use task specific network mode
-	mode := taskConfig.Network_mode
+	mode := taskConfig.NetworkMode
 	if mode == "" {
 		// but fallback to global driver config
 		mode = d.config.NetworkMode
