@@ -47,6 +47,10 @@ var (
 			hclspec.NewLiteral("true"),
 		),
 		"lxc_path": hclspec.NewAttr("lxc_path", "string", false),
+		"destroy_containers": hclspec.NewDefault(
+			hclspec.NewAttr("destroy_containers", "bool", false),
+			hclspec.NewLiteral("true"),
+		),
 	})
 
 	// taskConfigSpec is the hcl specification for the driver config section of
@@ -113,6 +117,9 @@ type Config struct {
 	AllowVolumes bool `codec:"volumes_enabled"`
 
 	LXCPath string `codec:"lxc_path"`
+
+	// if enabled (default!): destroy lxc container when task is destroyed
+	DestroyContainers bool `codec:"destroy_containers"`
 }
 
 // TaskConfig is the driver configuration of a task within a job
@@ -445,7 +452,14 @@ func (d *Driver) DestroyTask(taskID string, force bool) error {
 			handle.logger.Error("failed to destroy executor", "err", err)
 		}
 	}
-
+	if d.config.DestroyContainers {
+		handle.logger.Debug("Destroying container", "container", handle.container.Name())
+		// delete the container itself
+		if err := handle.container.Destroy(); err != nil {
+			handle.logger.Error("failed to destroy lxc container", "err", err)
+		}
+	}
+	// finally cleanup task map
 	d.tasks.Delete(taskID)
 	return nil
 }
