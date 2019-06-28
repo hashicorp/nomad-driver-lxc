@@ -140,7 +140,7 @@ type TaskConfig struct {
 	LogLevel             string   `codec:"log_level"`
 	Verbosity            string   `codec:"verbosity"`
 	Volumes              []string `codec:"volumes"`
-	Network_mode         string   `codec:"network_mode"`
+	NetworkMode          string   `codec:"network_mode"`
 }
 
 // TaskState is the state which is encoded in the handle returned in
@@ -454,7 +454,7 @@ func (d *Driver) DestroyTask(taskID string, force bool) error {
 			handle.logger.Error("failed to destroy executor", "err", err)
 		}
 	}
-	
+
 	d.tasks.Delete(taskID)
 	return nil
 }

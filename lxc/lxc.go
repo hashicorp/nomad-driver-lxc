@@ -82,19 +82,19 @@ func (d *Driver) configureContainerNetwork(c *lxc.Container, taskConfig TaskConf
 	}
 
 	// switch lxc < 2.1
-	lxc_key_prefix := networkTypeConfigPrefix()
+	lxcKeyPrefix := networkTypeConfigPrefix()
 
 	if mode == "host" {
 		// Set the network type to none for shared "host" networking
-		if err := c.SetConfigItem(lxc_key_prefix+"type", "none"); err != nil {
+		if err := c.SetConfigItem(lxcKeyPrefix+"type", "none"); err != nil {
 			return fmt.Errorf("error setting network type configuration 'none': %v", err)
 		}
 	} else if mode == "bridge" {
 		// Set the network type to veth for attaching to lxc bridge
-		if err := c.SetConfigItem(lxc_key_prefix+"type", "veth"); err != nil {
+		if err := c.SetConfigItem(lxcKeyPrefix+"type", "veth"); err != nil {
 			return fmt.Errorf("error setting network type configuration 'veth': %v", err)
 		}
-		if err := c.SetConfigItem(lxc_key_prefix+"link", "lxcbr0"); err != nil {
+		if err := c.SetConfigItem(lxcKeyPrefix+"link", "lxcbr0"); err != nil {
 			return fmt.Errorf("error setting network link configuration: %v", err)
 		}
 	} else {
