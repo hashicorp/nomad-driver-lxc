@@ -29,6 +29,7 @@ func TestLXCDriver_Fingerprint(t *testing.T) {
 
 	d := NewLXCDriver(testlog.HCLogger(t)).(*Driver)
 	d.config.Enabled = true
+	d.config.NetworkMode = "host"
 	harness := dtestutil.NewDriverHarness(t, d)
 
 	fingerCh, err := harness.Fingerprint(context.Background())
@@ -51,6 +52,7 @@ func TestLXCDriver_FingerprintNotEnabled(t *testing.T) {
 
 	d := NewLXCDriver(testlog.HCLogger(t)).(*Driver)
 	d.config.Enabled = false
+	d.config.NetworkMode = "host"
 	harness := dtestutil.NewDriverHarness(t, d)
 
 	fingerCh, err := harness.Fingerprint(context.Background())
@@ -258,6 +260,175 @@ func TestLXCDriver_Start_Stop(t *testing.T) {
 	}, func(err error) {
 		t.Fatalf("task was not marked as stopped: %v", err)
 	})
+}
+
+// check if lxc container is destroyed if gc.container=true
+func TestLXCDriver_GC_Container_on(t *testing.T) {
+	if !testutil.IsTravis() {
+		t.Parallel()
+	}
+	requireLXC(t)
+	ctestutil.RequireRoot(t)
+
+	require := require.New(t)
+
+	d := NewLXCDriver(testlog.HCLogger(t)).(*Driver)
+	d.config.Enabled = true
+	d.config.NetworkMode = "host"
+	// enable Container GC
+	d.config.GC.Container = true
+
+	harness := dtestutil.NewDriverHarness(t, d)
+	task := &drivers.TaskConfig{
+		ID:      uuid.Generate(),
+		AllocID: uuid.Generate(),
+		Name:    "test",
+		Resources: &drivers.Resources{
+			NomadResources: &structs.AllocatedTaskResources{
+				Memory: structs.AllocatedMemoryResources{
+					MemoryMB: 2,
+				},
+				Cpu: structs.AllocatedCpuResources{
+					CpuShares: 1024,
+				},
+			},
+			LinuxResources: &drivers.LinuxResources{
+				CPUShares:        1024,
+				MemoryLimitBytes: 2 * 1024,
+			},
+		},
+	}
+	taskConfig := map[string]interface{}{
+		"template": "/usr/share/lxc/templates/lxc-busybox",
+	}
+	require.NoError(task.EncodeConcreteDriverConfig(&taskConfig))
+
+	cleanup := harness.MkAllocDir(task, false)
+	defer cleanup()
+
+	handle, _, err := harness.StartTask(task)
+	require.NoError(err)
+	require.NotNil(handle)
+
+	lxcHandle, ok := d.tasks.Get(task.ID)
+	require.True(ok)
+
+	container := lxcHandle.container
+
+	// Destroy container after test
+	defer func() {
+		container.Stop()
+		container.Destroy()
+	}()
+
+	// Test that container is running
+	testutil.WaitForResult(func() (bool, error) {
+		state := container.State()
+		if state == lxc.RUNNING {
+			return true, nil
+		}
+		return false, fmt.Errorf("container in state: %v", state)
+	}, func(err error) {
+		t.Fatalf("container failed to start: %v", err)
+	})
+
+	lxcContainerName := container.Name()
+
+	// stop task
+	require.NoError(harness.StopTask(task.ID, 0, ""))
+	require.NoError(harness.DestroyTask(task.ID, true))
+
+	require.False(containerExists(lxcContainerName))
+}
+
+// check if lxc container is not destroyed if gc.container=false
+func TestLXCDriver_GC_Container_off(t *testing.T) {
+	if !testutil.IsTravis() {
+		t.Parallel()
+	}
+	requireLXC(t)
+	ctestutil.RequireRoot(t)
+
+	require := require.New(t)
+
+	d := NewLXCDriver(testlog.HCLogger(t)).(*Driver)
+	d.config.Enabled = true
+	d.config.NetworkMode = "host"
+	// disable Container GC
+	d.config.GC.Container = false
+
+	harness := dtestutil.NewDriverHarness(t, d)
+	task := &drivers.TaskConfig{
+		ID:      uuid.Generate(),
+		AllocID: uuid.Generate(),
+		Name:    "test",
+		Resources: &drivers.Resources{
+			NomadResources: &structs.AllocatedTaskResources{
+				Memory: structs.AllocatedMemoryResources{
+					MemoryMB: 2,
+				},
+				Cpu: structs.AllocatedCpuResources{
+					CpuShares: 1024,
+				},
+			},
+			LinuxResources: &drivers.LinuxResources{
+				CPUShares:        1024,
+				MemoryLimitBytes: 2 * 1024,
+			},
+		},
+	}
+	taskConfig := map[string]interface{}{
+		"template": "/usr/share/lxc/templates/lxc-busybox",
+	}
+	require.NoError(task.EncodeConcreteDriverConfig(&taskConfig))
+
+	cleanup := harness.MkAllocDir(task, false)
+	defer cleanup()
+
+	handle, _, err := harness.StartTask(task)
+	require.NoError(err)
+	require.NotNil(handle)
+
+	lxcHandle, ok := d.tasks.Get(task.ID)
+	require.True(ok)
+
+	container := lxcHandle.container
+
+	// Destroy container after test
+	defer func() {
+		container.Stop()
+		container.Destroy()
+	}()
+
+	// Test that container is running
+	testutil.WaitForResult(func() (bool, error) {
+		state := container.State()
+		if state == lxc.RUNNING {
+			return true, nil
+		}
+		return false, fmt.Errorf("container in state: %v", state)
+	}, func(err error) {
+		t.Fatalf("container failed to start: %v", err)
+	})
+
+	lxcContainerName := container.Name()
+
+	// stop task
+	require.NoError(harness.StopTask(task.ID, 0, ""))
+	require.NoError(harness.DestroyTask(task.ID, true))
+
+	// container should not be deleted now (GC.Container = false)
+	require.True(containerExists(lxcContainerName))
+}
+
+func containerExists(containerName string) bool {
+	allContainers := lxc.ContainerNames(lxc.DefaultConfigPath())
+	for _, name := range allContainers {
+		if name == containerName {
+			return true
+		}
+	}
+	return false
 }
 
 func requireLXC(t *testing.T) {

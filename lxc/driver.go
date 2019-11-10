@@ -51,6 +51,17 @@ var (
 			hclspec.NewAttr("network_mode", "string", false),
 			hclspec.NewLiteral("\"bridge\""),
 		),
+		// garbage collection options
+		// default needed for both if the gc {...} block is not set and
+		// if the default fields are missing
+		"gc": hclspec.NewDefault(hclspec.NewBlock("gc", false, hclspec.NewObject(map[string]*hclspec.Spec{
+			"container": hclspec.NewDefault(
+				hclspec.NewAttr("container", "bool", false),
+				hclspec.NewLiteral("true"),
+			),
+		})), hclspec.NewLiteral(`{
+			container = true
+		}`)),
 	})
 
 	// taskConfigSpec is the hcl specification for the driver config section of
@@ -110,6 +121,11 @@ type Driver struct {
 	logger hclog.Logger
 }
 
+// GCConfig is the driver GarbageCollection configuration
+type GCConfig struct {
+	Container bool `codec:"container"`
+}
+
 // Config is the driver configuration set by the SetConfig RPC call
 type Config struct {
 	// Enabled is set to true to enable the lxc driver
@@ -121,6 +137,8 @@ type Config struct {
 
 	// default networking mode if not specified in task config
 	NetworkMode string `codec:"network_mode"`
+
+	GC GCConfig `codec:"gc"`
 }
 
 // TaskConfig is the driver configuration of a task within a job
@@ -454,7 +472,14 @@ func (d *Driver) DestroyTask(taskID string, force bool) error {
 			handle.logger.Error("failed to destroy executor", "err", err)
 		}
 	}
-
+	if d.config.GC.Container {
+		handle.logger.Debug("Destroying container", "container", handle.container.Name())
+		// delete the container itself
+		if err := handle.container.Destroy(); err != nil {
+			handle.logger.Error("failed to destroy lxc container", "err", err)
+		}
+	}
+	// finally cleanup task map
 	d.tasks.Delete(taskID)
 	return nil
 }
