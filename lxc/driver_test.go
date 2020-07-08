@@ -29,6 +29,7 @@ func TestLXCDriver_Fingerprint(t *testing.T) {
 
 	d := NewLXCDriver(testlog.HCLogger(t)).(*Driver)
 	d.config.Enabled = true
+	d.config.NetworkMode = "host"
 	harness := dtestutil.NewDriverHarness(t, d)
 
 	fingerCh, err := harness.Fingerprint(context.Background())
@@ -51,6 +52,7 @@ func TestLXCDriver_FingerprintNotEnabled(t *testing.T) {
 
 	d := NewLXCDriver(testlog.HCLogger(t)).(*Driver)
 	d.config.Enabled = false
+	d.config.NetworkMode = "host"
 	harness := dtestutil.NewDriverHarness(t, d)
 
 	fingerCh, err := harness.Fingerprint(context.Background())
@@ -91,6 +93,7 @@ func TestLXCDriver_Start_Wait(t *testing.T) {
 	d := NewLXCDriver(testlog.HCLogger(t)).(*Driver)
 	d.config.Enabled = true
 	d.config.AllowVolumes = true
+	d.config.NetworkMode = "host"
 
 	harness := dtestutil.NewDriverHarness(t, d)
 	task := &drivers.TaskConfig{
@@ -190,6 +193,7 @@ func TestLXCDriver_Start_Stop(t *testing.T) {
 	d := NewLXCDriver(testlog.HCLogger(t)).(*Driver)
 	d.config.Enabled = true
 	d.config.AllowVolumes = true
+	d.config.NetworkMode = "host"
 
 	harness := dtestutil.NewDriverHarness(t, d)
 	task := &drivers.TaskConfig{
@@ -270,6 +274,7 @@ func TestLXCDriver_GC_Container_on(t *testing.T) {
 
 	d := NewLXCDriver(testlog.HCLogger(t)).(*Driver)
 	d.config.Enabled = true
+	d.config.NetworkMode = "host"
 	// enable Container GC
 	d.config.GC.Container = true
 
@@ -348,6 +353,7 @@ func TestLXCDriver_GC_Container_off(t *testing.T) {
 
 	d := NewLXCDriver(testlog.HCLogger(t)).(*Driver)
 	d.config.Enabled = true
+	d.config.NetworkMode = "host"
 	// disable Container GC
 	d.config.GC.Container = false
 

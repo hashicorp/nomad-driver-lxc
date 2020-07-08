@@ -47,6 +47,10 @@ var (
 			hclspec.NewLiteral("true"),
 		),
 		"lxc_path": hclspec.NewAttr("lxc_path", "string", false),
+		"network_mode": hclspec.NewDefault(
+			hclspec.NewAttr("network_mode", "string", false),
+			hclspec.NewLiteral("\"bridge\""),
+		),
 		// garbage collection options
 		// default needed for both if the gc {...} block is not set and
 		// if the default fields are missing
@@ -78,6 +82,7 @@ var (
 		"log_level":      hclspec.NewAttr("log_level", "string", false),
 		"verbosity":      hclspec.NewAttr("verbosity", "string", false),
 		"volumes":        hclspec.NewAttr("volumes", "list(string)", false),
+		"network_mode":   hclspec.NewAttr("network_mode", "string", false),
 	})
 
 	// capabilities is returned by the Capabilities RPC and indicates what
@@ -130,6 +135,9 @@ type Config struct {
 
 	LXCPath string `codec:"lxc_path"`
 
+	// default networking mode if not specified in task config
+	NetworkMode string `codec:"network_mode"`
+
 	GC GCConfig `codec:"gc"`
 }
 
@@ -150,6 +158,7 @@ type TaskConfig struct {
 	LogLevel             string   `codec:"log_level"`
 	Verbosity            string   `codec:"verbosity"`
 	Volumes              []string `codec:"volumes"`
+	NetworkMode          string   `codec:"network_mode"`
 }
 
 // TaskState is the state which is encoded in the handle returned in
@@ -337,7 +346,7 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 		}
 	}
 
-	if err := d.configureContainerNetwork(c); err != nil {
+	if err := d.configureContainerNetwork(c, driverConfig); err != nil {
 		cleanup()
 		return nil, nil, err
 	}

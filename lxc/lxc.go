@@ -72,21 +72,44 @@ func (d *Driver) initializeContainer(cfg *drivers.TaskConfig, taskConfig TaskCon
 	return c, nil
 }
 
-func (d *Driver) configureContainerNetwork(c *lxc.Container) error {
-	// Set the network type to none
-	if err := c.SetConfigItem(networkTypeConfigKey(), "none"); err != nil {
-		return fmt.Errorf("error setting network type configuration: %v", err)
+func (d *Driver) configureContainerNetwork(c *lxc.Container, taskConfig TaskConfig) error {
+
+	// use task specific network mode
+	mode := taskConfig.NetworkMode
+	if mode == "" {
+		// but fallback to global driver config
+		mode = d.config.NetworkMode
+	}
+
+	// switch lxc < 2.1
+	lxcKeyPrefix := networkTypeConfigPrefix()
+
+	if mode == "host" {
+		// Set the network type to none for shared "host" networking
+		if err := c.SetConfigItem(lxcKeyPrefix+"type", "none"); err != nil {
+			return fmt.Errorf("error setting network type configuration 'none': %v", err)
+		}
+	} else if mode == "bridge" {
+		// Set the network type to veth for attaching to lxc bridge
+		if err := c.SetConfigItem(lxcKeyPrefix+"type", "veth"); err != nil {
+			return fmt.Errorf("error setting network type configuration 'veth': %v", err)
+		}
+		if err := c.SetConfigItem(lxcKeyPrefix+"link", "lxcbr0"); err != nil {
+			return fmt.Errorf("error setting network link configuration: %v", err)
+		}
+	} else {
+		return fmt.Errorf("Network mode is undefined")
 	}
 	return nil
 }
 
-func networkTypeConfigKey() string {
+func networkTypeConfigPrefix() string {
 	if lxc.VersionAtLeast(2, 1, 0) {
-		return "lxc.net.0.type"
+		return "lxc.net.0."
 	}
 
 	// prior to 2.1, network used
-	return "lxc.network.type"
+	return "lxc.network."
 }
 
 func (d *Driver) mountVolumes(c *lxc.Container, cfg *drivers.TaskConfig, taskConfig TaskConfig) error {
