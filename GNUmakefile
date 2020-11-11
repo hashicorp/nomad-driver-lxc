@@ -29,15 +29,12 @@ lint-deps: ## Install linter dependencies
 .PHONY: check
 check: ## Lint the source code
 	@echo "==> Linting source code..."
-	@golangci-lint run -j 1
+	@golangci-lint run -j 1 --timeout=10m
 
 .PHONY: changelogfmt
 changelogfmt:
 	@echo "--> Making [GH-xxxx] references clickable..."
 	@sed -E 's|([^\[])\[GH-([0-9]+)\]|\1[[GH-\2](https://github.com/hashicorp/nomad/issues/\2)]|g' CHANGELOG.md > changelog.tmp && mv changelog.tmp CHANGELOG.md
-
-.PHONY: travis
-travis: check test
 
 ALL_TARGETS += linux_amd64
 

@@ -13,7 +13,4 @@ install:
   - make lint-deps
 
 script:
-  - sudo -E "PATH=$PATH" GOTESTSUM_JUNITFILE=/tmp/results.xml make travis
-
-after_script:
-  - cat /tmp/results.xml
+  - sudo -E "PATH=$PATH" make check test
