@@ -169,6 +169,10 @@ func (d *Driver) mountEntries(cfg *drivers.TaskConfig, taskConfig TaskConfig) ([
 		} else {
 			// Relative source paths are treated as relative to alloc dir
 			paths[0] = filepath.Join(cfg.TaskDir().Dir, paths[0])
+			if !volumesEnabled && pathEscapesSandbox(cfg.TaskDir().Dir, paths[0]) {
+				return nil, fmt.Errorf(
+					"bind-mount path escapes task directory but volumes are disabled")
+			}
 		}
 
 		// LXC assumes paths are relative with respect to rootfs
@@ -178,6 +182,17 @@ func (d *Driver) mountEntries(cfg *drivers.TaskConfig, taskConfig TaskConfig) ([
 
 	return mounts, nil
 
+}
+
+func pathEscapesSandbox(sandboxDir, path string) bool {
+	rel, err := filepath.Rel(sandboxDir, path)
+	if err != nil {
+		return true
+	}
+	if strings.HasPrefix(rel, "..") {
+		return true
+	}
+	return false
 }
 
 func (d *Driver) devicesCgroupEntries(cfg *drivers.TaskConfig) ([]string, error) {
