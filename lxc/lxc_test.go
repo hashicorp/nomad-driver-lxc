@@ -67,6 +67,34 @@ func TestLXCDriver_Mounts(t *testing.T) {
 	}
 }
 
+func TestLXCDriver_BadMounts(t *testing.T) {
+	t.Parallel()
+
+	task := &drivers.TaskConfig{
+		ID:   uuid.Generate(),
+		Name: "test",
+		Mounts: []*drivers.MountConfig{
+			{HostPath: "/dev", TaskPath: "/task-mounts/dev-path"},
+			{HostPath: "/bin/sh", TaskPath: "/task-mounts/task-path-ro", Readonly: true},
+		},
+	}
+	taskConfig := TaskConfig{
+		Template: "busybox",
+		Volumes:  []string{"/absolute/path:/usr-config/container/path"},
+	}
+
+	d := NewLXCDriver(testlog.HCLogger(t)).(*Driver)
+	d.config.Enabled = true
+	d.config.AllowVolumes = false
+
+	_, err := d.mountEntries(task, taskConfig)
+	require.EqualError(t, err, "absolute bind-mount volume in config but volumes are disabled")
+
+	taskConfig.Volumes = []string{"relative/../../../path2:usr-config/container/relative"}
+	_, err = d.mountEntries(task, taskConfig)
+	require.EqualError(t, err, "bind-mount path escapes task directory but volumes are disabled")
+}
+
 func TestLXCDriver_DevicesCgroup(t *testing.T) {
 	t.Parallel()
 
