@@ -14,55 +14,23 @@ build:
 test:
 	go test \
 		-timeout=15m \
-	       ./...	
+	       ./...
 
 .PHONY: fmt
 fmt:
 	@echo "==> Fixing source code with gofmt..."
 	gofmt -s -w ./lxc
 
-.PHONY: bootstrap
-bootstrap: deps lint-deps # install all dependencies
-
-.PHONY: deps
-deps:  ## Install build and development dependencies
-	@echo "==> Updating build dependencies..."
-	go get -u github.com/kardianos/govendor
-	go get -u gotest.tools/gotestsum
-	command -v nomad || go get -u github.com/hashicorp/nomad
-
 .PHONY: lint-deps
 lint-deps: ## Install linter dependencies
 	@echo "==> Updating linter dependencies..."
-	go get -u github.com/alecthomas/gometalinter
-	gometalinter --install
+	GO111MODULE=on go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.24.0
 
 .PHONY: check
 check: ## Lint the source code
 	@echo "==> Linting source code..."
-	@gometalinter \
-		--deadline 10m \
-		--vendor \
-		--sort="path" \
-		--aggregate \
-		--enable-gc \
-		--disable-all \
-		--enable goimports \
-		--enable misspell \
-		--enable vet \
-		--enable deadcode \
-		--enable varcheck \
-		--enable ineffassign \
-		--enable structcheck \
-		--enable unconvert \
-		--enable gofmt \
-		./...
+	@golangci-lint run -j 1
 
-.PHONY: vendorfmt
-vendorfmt:
-	@echo "--> Formatting vendor/vendor.json"
-	test -x $(GOPATH)/bin/vendorfmt || go get -u github.com/magiconair/vendorfmt/cmd/vendorfmt
-		vendorfmt
 .PHONY: changelogfmt
 changelogfmt:
 	@echo "--> Making [GH-xxxx] references clickable..."

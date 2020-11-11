@@ -4,13 +4,12 @@ dist: xenial
 sudo: required
 
 go:
-  - "1.12.x"
+  - "1.15.x"
 
 before_install:
   - sudo -E bash ./scripts/travis-linux.sh
 
 install:
-  - make deps
   - make lint-deps
 
 script:
