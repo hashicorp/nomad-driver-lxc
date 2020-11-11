@@ -135,8 +135,14 @@ func TestLXCDriver_Start_Wait(t *testing.T) {
 
 	// Destroy container after test
 	defer func() {
-		container.Stop()
-		container.Destroy()
+		err := container.Stop()
+		if err != nil {
+			fmt.Println("container could not be stopped")
+		}
+		err = container.Destroy()
+		if err != nil {
+			fmt.Println("container could not be destroyed")
+		}
 	}()
 
 	// Test that container is running
@@ -234,8 +240,14 @@ func TestLXCDriver_Start_Stop(t *testing.T) {
 
 	// Destroy container after test
 	defer func() {
-		container.Stop()
-		container.Destroy()
+		err := container.Stop()
+		if err != nil {
+			fmt.Println("container could not be stopped")
+		}
+		err = container.Destroy()
+		if err != nil {
+			fmt.Println("container could not be destroyed")
+		}
 	}()
 
 	// Test that container is running
@@ -317,8 +329,14 @@ func TestLXCDriver_GC_Container_on(t *testing.T) {
 
 	// Destroy container after test
 	defer func() {
-		container.Stop()
-		container.Destroy()
+		err := container.Stop()
+		if err != nil {
+			fmt.Println("container could not be stopped")
+		}
+		err = container.Destroy()
+		if err != nil {
+			fmt.Println("container could not be destroyed")
+		}
 	}()
 
 	// Test that container is running
@@ -396,8 +414,14 @@ func TestLXCDriver_GC_Container_off(t *testing.T) {
 
 	// Destroy container after test
 	defer func() {
-		container.Stop()
-		container.Destroy()
+		err := container.Stop()
+		if err != nil {
+			fmt.Println("container could not be stopped")
+		}
+		err = container.Destroy()
+		if err != nil {
+			fmt.Println("container could not be destroyed")
+		}
 	}()
 
 	// Test that container is running

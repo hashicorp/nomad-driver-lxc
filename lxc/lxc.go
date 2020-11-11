@@ -61,13 +61,19 @@ func (d *Driver) initializeContainer(cfg *drivers.TaskConfig, taskConfig TaskCon
 	}
 
 	if v, ok := logLevels[taskConfig.LogLevel]; ok {
-		c.SetLogLevel(v)
+		err := c.SetLogLevel(v)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		return nil, fmt.Errorf("lxc driver config 'log_level' can only be trace, debug, info, warn or error")
 	}
 
 	logFile := filepath.Join(cfg.TaskDir().Dir, fmt.Sprintf("%v-lxc.log", cfg.Name))
-	c.SetLogFile(logFile)
+	err = c.SetLogFile(logFile)
+	if err != nil {
+		return nil, err
+	}
 
 	return c, nil
 }
