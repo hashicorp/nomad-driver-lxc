@@ -14,7 +14,6 @@ apt-get install -y \
         git \
         libc6-dev-i386 \
         libpcre3-dev \
-        linux-libc-dev:i386 \
         pkg-config \
         zip
 
