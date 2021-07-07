@@ -1,5 +1,8 @@
 ## UNRELEASED
 
+BUG FIXES:
+* driver: Update `hashicorp/nomad` to v1.1.2 to include numerous fixes. [[GH-29](https://github.com/hashicorp/nomad-driver-lxc/pull/29)]
+
 ## 0.3.0 (November 11, 2020)
 
 BUG FIXES:
