@@ -17,8 +17,8 @@ import (
 	"github.com/hashicorp/nomad/plugins/drivers"
 	dtestutil "github.com/hashicorp/nomad/plugins/drivers/testutils"
 	"github.com/hashicorp/nomad/testutil"
+	lxc "github.com/lxc/go-lxc"
 	"github.com/stretchr/testify/require"
-	lxc "gopkg.in/lxc/go-lxc.v2"
 )
 
 func TestLXCDriver_Fingerprint(t *testing.T) {

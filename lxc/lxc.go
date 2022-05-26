@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/hashicorp/nomad/plugins/drivers"
+	lxc "github.com/lxc/go-lxc"
 	ldevices "github.com/opencontainers/runc/libcontainer/devices"
-	lxc "gopkg.in/lxc/go-lxc.v2"
 )
 
 var (

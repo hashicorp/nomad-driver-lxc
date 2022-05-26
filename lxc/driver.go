@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/nomad/plugins/drivers"
 	"github.com/hashicorp/nomad/plugins/shared/hclspec"
 	pstructs "github.com/hashicorp/nomad/plugins/shared/structs"
-	lxc "gopkg.in/lxc/go-lxc.v2"
+	lxc "github.com/lxc/go-lxc"
 )
 
 const (
