@@ -47,6 +47,10 @@ var (
 			hclspec.NewAttr("volumes_enabled", "bool", false),
 			hclspec.NewLiteral("true"),
 		),
+		"default_config": hclspec.NewDefault(
+			hclspec.NewAttr("default_config", "string", false),
+			hclspec.NewLiteral("\""+lxc.GlobalConfigItem("lxc.default_config")+"\""),
+		),
 		"lxc_path": hclspec.NewAttr("lxc_path", "string", false),
 		"network_mode": hclspec.NewDefault(
 			hclspec.NewAttr("network_mode", "string", false),
@@ -134,6 +138,8 @@ type Config struct {
 
 	AllowVolumes bool `codec:"volumes_enabled"`
 
+	DefaultConfig string `codec:"default_config"`
+
 	LXCPath string `codec:"lxc_path"`
 
 	// default networking mode if not specified in task config
@@ -160,6 +166,7 @@ type TaskConfig struct {
 	Verbosity            string   `codec:"verbosity"`
 	Volumes              []string `codec:"volumes"`
 	NetworkMode          string   `codec:"network_mode"`
+	DefaultConfig        string   `codec:"default_config"`
 }
 
 // TaskState is the state which is encoded in the handle returned in

@@ -75,6 +75,17 @@ func (d *Driver) initializeContainer(cfg *drivers.TaskConfig, taskConfig TaskCon
 		return nil, err
 	}
 
+	// use task specific config
+	defaultConfig := taskConfig.DefaultConfig
+	if defaultConfig == "" {
+		// but fallback to global config
+		defaultConfig = d.config.DefaultConfig
+	}
+	err = c.LoadConfigFile(defaultConfig)
+	if err != nil {
+		d.logger.Warn("failed to load default config", "path", defaultConfig, "error", err)
+	}
+
 	return c, nil
 }
 
