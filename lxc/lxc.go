@@ -262,8 +262,10 @@ func (d *Driver) formatMount(hostPath, taskPath string, readOnly bool) string {
 }
 
 func (d *Driver) setResourceLimits(c *lxc.Container, cfg *drivers.TaskConfig) error {
-	if err := c.SetMemoryLimit(lxc.ByteSize(cfg.Resources.NomadResources.Memory.MemoryMB) * lxc.MB); err != nil {
-		return fmt.Errorf("unable to set memory limits: %v", err)
+	if err := c.SetCgroupItem("memory.max", fmt.Sprintf("%.f", lxc.ByteSize(cfg.Resources.NomadResources.Memory.MemoryMB)*lxc.MB)); err != nil {
+		if err := c.SetMemoryLimit(lxc.ByteSize(cfg.Resources.NomadResources.Memory.MemoryMB) * lxc.MB); err != nil {
+			return fmt.Errorf("unable to set memory limits: %v", err)
+		}
 	}
 
 	if err := c.SetCgroupItem("cpu.shares", strconv.FormatInt(cfg.Resources.LinuxResources.CPUShares, 10)); err != nil {
