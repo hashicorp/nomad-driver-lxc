@@ -349,8 +349,13 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 	}
 
 	cleanup := func() {
+		if c.Running() {
+			if err := c.Stop(); err != nil {
+				d.logger.Error("failed to Stop during clean up from an error in Start", "error", err)
+			}
+		}
 		if err := c.Destroy(); err != nil {
-			d.logger.Error("failed to clean up from an error in Start", "error", err)
+			d.logger.Error("failed to Destroy during clean up from an error in Start", "error", err)
 		}
 	}
 
