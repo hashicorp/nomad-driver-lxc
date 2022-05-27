@@ -268,8 +268,10 @@ func (d *Driver) setResourceLimits(c *lxc.Container, cfg *drivers.TaskConfig) er
 		}
 	}
 
-	if err := c.SetCgroupItem("cpu.shares", strconv.FormatInt(cfg.Resources.LinuxResources.CPUShares, 10)); err != nil {
-		return fmt.Errorf("unable to set cpu shares: %v", err)
+	if err := c.SetCgroupItem("cpu.weight", strconv.FormatInt(cfg.Resources.LinuxResources.CPUShares, 10)); err != nil {
+		if err := c.SetCgroupItem("cpu.shares", strconv.FormatInt(cfg.Resources.LinuxResources.CPUShares, 10)); err != nil {
+			return fmt.Errorf("unable to set cpu shares: %v", err)
+		}
 	}
 
 	return nil
