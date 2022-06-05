@@ -114,6 +114,9 @@ func (d *Driver) configureContainerNetwork(c *lxc.Container, taskConfig TaskConf
 		if err := c.SetConfigItem(lxcKeyPrefix+"link", "lxcbr0"); err != nil {
 			return fmt.Errorf("error setting network link configuration: %v", err)
 		}
+		if err := c.SetConfigItem(lxcKeyPrefix+"flags", "up"); err != nil {
+			return fmt.Errorf("error setting network flags configuration: %v", err)
+		}
 	} else {
 		return fmt.Errorf("Network mode is undefined")
 	}
