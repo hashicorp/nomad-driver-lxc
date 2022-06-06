@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/hashicorp/nomad/plugins/drivers"
+	lxc "github.com/lxc/go-lxc"
 	ldevices "github.com/opencontainers/runc/libcontainer/devices"
-	lxc "gopkg.in/lxc/go-lxc.v2"
 )
 
 var (
@@ -75,6 +75,17 @@ func (d *Driver) initializeContainer(cfg *drivers.TaskConfig, taskConfig TaskCon
 		return nil, err
 	}
 
+	// use task specific config
+	defaultConfig := taskConfig.DefaultConfig
+	if defaultConfig == "" {
+		// but fallback to global config
+		defaultConfig = d.config.DefaultConfig
+	}
+	err = c.LoadConfigFile(defaultConfig)
+	if err != nil {
+		d.logger.Warn("failed to load default config", "path", defaultConfig, "error", err)
+	}
+
 	return c, nil
 }
 
@@ -102,6 +113,9 @@ func (d *Driver) configureContainerNetwork(c *lxc.Container, taskConfig TaskConf
 		}
 		if err := c.SetConfigItem(lxcKeyPrefix+"link", "lxcbr0"); err != nil {
 			return fmt.Errorf("error setting network link configuration: %v", err)
+		}
+		if err := c.SetConfigItem(lxcKeyPrefix+"flags", "up"); err != nil {
+			return fmt.Errorf("error setting network flags configuration: %v", err)
 		}
 	} else {
 		return fmt.Errorf("Network mode is undefined")
@@ -251,12 +265,16 @@ func (d *Driver) formatMount(hostPath, taskPath string, readOnly bool) string {
 }
 
 func (d *Driver) setResourceLimits(c *lxc.Container, cfg *drivers.TaskConfig) error {
-	if err := c.SetMemoryLimit(lxc.ByteSize(cfg.Resources.NomadResources.Memory.MemoryMB) * lxc.MB); err != nil {
-		return fmt.Errorf("unable to set memory limits: %v", err)
+	if err := c.SetCgroupItem("memory.max", fmt.Sprintf("%.f", lxc.ByteSize(cfg.Resources.NomadResources.Memory.MemoryMB)*lxc.MB)); err != nil {
+		if err := c.SetMemoryLimit(lxc.ByteSize(cfg.Resources.NomadResources.Memory.MemoryMB) * lxc.MB); err != nil {
+			return fmt.Errorf("unable to set memory limits: %v", err)
+		}
 	}
 
-	if err := c.SetCgroupItem("cpu.shares", strconv.FormatInt(cfg.Resources.LinuxResources.CPUShares, 10)); err != nil {
-		return fmt.Errorf("unable to set cpu shares: %v", err)
+	if err := c.SetCgroupItem("cpu.weight", strconv.FormatInt(cfg.Resources.LinuxResources.CPUShares, 10)); err != nil {
+		if err := c.SetCgroupItem("cpu.shares", strconv.FormatInt(cfg.Resources.LinuxResources.CPUShares, 10)); err != nil {
+			return fmt.Errorf("unable to set cpu shares: %v", err)
+		}
 	}
 
 	return nil

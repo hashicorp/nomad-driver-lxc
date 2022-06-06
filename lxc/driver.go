@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/nomad/plugins/drivers"
 	"github.com/hashicorp/nomad/plugins/shared/hclspec"
 	pstructs "github.com/hashicorp/nomad/plugins/shared/structs"
-	lxc "gopkg.in/lxc/go-lxc.v2"
+	lxc "github.com/lxc/go-lxc"
 )
 
 const (
@@ -46,6 +46,10 @@ var (
 		"volumes_enabled": hclspec.NewDefault(
 			hclspec.NewAttr("volumes_enabled", "bool", false),
 			hclspec.NewLiteral("true"),
+		),
+		"default_config": hclspec.NewDefault(
+			hclspec.NewAttr("default_config", "string", false),
+			hclspec.NewLiteral("\""+lxc.GlobalConfigItem("lxc.default_config")+"\""),
 		),
 		"lxc_path": hclspec.NewAttr("lxc_path", "string", false),
 		"network_mode": hclspec.NewDefault(
@@ -134,6 +138,8 @@ type Config struct {
 
 	AllowVolumes bool `codec:"volumes_enabled"`
 
+	DefaultConfig string `codec:"default_config"`
+
 	LXCPath string `codec:"lxc_path"`
 
 	// default networking mode if not specified in task config
@@ -160,6 +166,7 @@ type TaskConfig struct {
 	Verbosity            string   `codec:"verbosity"`
 	Volumes              []string `codec:"volumes"`
 	NetworkMode          string   `codec:"network_mode"`
+	DefaultConfig        string   `codec:"default_config"`
 }
 
 // TaskState is the state which is encoded in the handle returned in
@@ -342,8 +349,13 @@ func (d *Driver) StartTask(cfg *drivers.TaskConfig) (*drivers.TaskHandle, *drive
 	}
 
 	cleanup := func() {
+		if c.Running() {
+			if err := c.Stop(); err != nil {
+				d.logger.Error("failed to Stop during clean up from an error in Start", "error", err)
+			}
+		}
 		if err := c.Destroy(); err != nil {
-			d.logger.Error("failed to clean up from an error in Start", "error", err)
+			d.logger.Error("failed to Destroy during clean up from an error in Start", "error", err)
 		}
 	}
 

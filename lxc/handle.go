@@ -11,7 +11,7 @@ import (
 	hclog "github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/nomad/client/stats"
 	"github.com/hashicorp/nomad/plugins/drivers"
-	lxc "gopkg.in/lxc/go-lxc.v2"
+	lxc "github.com/lxc/go-lxc"
 )
 
 type taskHandle struct {

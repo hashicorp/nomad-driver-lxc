@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/nomad/client/state"
 	"github.com/hashicorp/nomad/client/stats"
 	"github.com/hashicorp/nomad/plugins/drivers"
-	lxc "gopkg.in/lxc/go-lxc.v2"
+	lxc "github.com/lxc/go-lxc"
 )
 
 func (d *Driver) recoverPre09Task(h *drivers.TaskHandle) error {
