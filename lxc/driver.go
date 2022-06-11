@@ -47,10 +47,6 @@ var (
 			hclspec.NewAttr("volumes_enabled", "bool", false),
 			hclspec.NewLiteral("true"),
 		),
-		"default_config": hclspec.NewDefault(
-			hclspec.NewAttr("default_config", "string", false),
-			hclspec.NewLiteral("\""+lxc.GlobalConfigItem("lxc.default_config")+"\""),
-		),
 		"lxc_path": hclspec.NewAttr("lxc_path", "string", false),
 		"network_mode": hclspec.NewDefault(
 			hclspec.NewAttr("network_mode", "string", false),
@@ -88,6 +84,7 @@ var (
 		"verbosity":      hclspec.NewAttr("verbosity", "string", false),
 		"volumes":        hclspec.NewAttr("volumes", "list(string)", false),
 		"network_mode":   hclspec.NewAttr("network_mode", "string", false),
+		"config_file":    hclspec.NewAttr("config_file", "string", false),
 	})
 
 	// capabilities is returned by the Capabilities RPC and indicates what
@@ -138,8 +135,6 @@ type Config struct {
 
 	AllowVolumes bool `codec:"volumes_enabled"`
 
-	DefaultConfig string `codec:"default_config"`
-
 	LXCPath string `codec:"lxc_path"`
 
 	// default networking mode if not specified in task config
@@ -166,7 +161,7 @@ type TaskConfig struct {
 	Verbosity            string   `codec:"verbosity"`
 	Volumes              []string `codec:"volumes"`
 	NetworkMode          string   `codec:"network_mode"`
-	DefaultConfig        string   `codec:"default_config"`
+	ConfigFile           string   `codec:"config_file"`
 }
 
 // TaskState is the state which is encoded in the handle returned in

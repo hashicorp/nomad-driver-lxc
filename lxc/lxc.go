@@ -76,14 +76,14 @@ func (d *Driver) initializeContainer(cfg *drivers.TaskConfig, taskConfig TaskCon
 	}
 
 	// use task specific config
-	defaultConfig := taskConfig.DefaultConfig
-	if defaultConfig == "" {
-		// but fallback to global config
-		defaultConfig = d.config.DefaultConfig
+	lxcConfigFile := taskConfig.ConfigFile
+	if taskConfig.ConfigFile == "" {
+		// fallback to global config
+		lxcConfigFile = lxc.GlobalConfigItem("lxc.default_config")
 	}
-	err = c.LoadConfigFile(defaultConfig)
+	err = c.LoadConfigFile(lxcConfigFile)
 	if err != nil {
-		d.logger.Warn("failed to load default config", "path", defaultConfig, "error", err)
+		d.logger.Warn("failed to load lxc config file", "path", lxcConfigFile, "error", err)
 	}
 
 	return c, nil
