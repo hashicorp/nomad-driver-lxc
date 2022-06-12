@@ -36,7 +36,7 @@ type taskHandle struct {
 var (
 	LXCMeasuredCpuStats = []string{"System Mode", "User Mode", "Percent"}
 
-	LXCMeasuredMemStats = []string{"RSS", "Cache", "Swap", "Max Usage", "Kernel Usage", "Kernel Max Usage"}
+	LXCMeasuredMemStats = []string{"RSS", "Cache", "Swap"}
 )
 
 func (h *taskHandle) TaskStatus() *drivers.TaskStatus {
@@ -149,35 +149,6 @@ func (h *taskHandle) handleStats(ctx context.Context, ch chan *drivers.TaskResou
 			Cache:    memData["cache"],
 			Swap:     memData["swap"],
 			Measured: LXCMeasuredMemStats,
-		}
-
-		mu := h.container.CgroupItem("memory.max_usage_in_bytes")
-		for _, rawMemMaxUsage := range mu {
-			val, err := strconv.ParseUint(rawMemMaxUsage, 10, 64)
-			if err != nil {
-				h.logger.Error("failed to get max memory usage", "error", err)
-				continue
-			}
-			ms.MaxUsage = val
-		}
-		ku := h.container.CgroupItem("memory.kmem.usage_in_bytes")
-		for _, rawKernelUsage := range ku {
-			val, err := strconv.ParseUint(rawKernelUsage, 10, 64)
-			if err != nil {
-				h.logger.Error("failed to get kernel memory usage", "error", err)
-				continue
-			}
-			ms.KernelUsage = val
-		}
-
-		mku := h.container.CgroupItem("memory.kmem.max_usage_in_bytes")
-		for _, rawMaxKernelUsage := range mku {
-			val, err := strconv.ParseUint(rawMaxKernelUsage, 10, 64)
-			if err != nil {
-				h.logger.Error("failed tog get max kernel memory usage", "error", err)
-				continue
-			}
-			ms.KernelMaxUsage = val
 		}
 
 		taskResUsage := drivers.TaskResourceUsage{
