@@ -150,8 +150,11 @@ func (d *Driver) mountVolumes(c *lxc.Container, cfg *drivers.TaskConfig, taskCon
 	}
 
 	for _, cgroupDev := range devCgroupAllows {
-		if err := c.SetConfigItem("lxc.cgroup.devices.allow", cgroupDev); err != nil {
-			return fmt.Errorf("error setting cgroup permission %q error: %v", cgroupDev, err)
+		// Try unified, fallback to legacy
+		if err := c.SetConfigItem("lxc.cgroup2.devices.allow", cgroupDev); err != nil {
+			if err = c.SetConfigItem("lxc.cgroup.devices.allow", cgroupDev); err != nil {
+				return fmt.Errorf("error setting cgroup permission %q error: %v", cgroupDev, err)
+			}
 		}
 	}
 
