@@ -11,7 +11,7 @@ require (
 	github.com/kr/pty v1.1.8 // indirect
 	github.com/lxc/go-lxc v0.0.0-20210607135324-10de240d43ab
 	github.com/onsi/ginkgo v1.12.0 // indirect
-	github.com/opencontainers/runc v1.0.0-rc93
+	github.com/opencontainers/runc v1.1.5
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/exp v0.0.0-20191030013958-a1ab85dbe136 // indirect
 	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f // indirect
