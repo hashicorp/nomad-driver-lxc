@@ -7,7 +7,7 @@ import (
 
 	hclog "github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/nomad-driver-lxc/version"
-	"github.com/hashicorp/nomad/client/stats"
+	"github.com/hashicorp/nomad/helper/stats"
 	"github.com/hashicorp/nomad/drivers/shared/eventer"
 	"github.com/hashicorp/nomad/plugins/base"
 	"github.com/hashicorp/nomad/plugins/drivers"
